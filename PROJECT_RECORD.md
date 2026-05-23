@@ -169,3 +169,39 @@ Recommended entry shape:
 - `backend/tests/test_app_smoke.py`: `/app` Growth Loop freeze-path smoke test.
 - `DEMO_STATUS.md`: smoke coverage status.
 - `MODULE_INTERFACES.md`: current test coverage notes.
+
+## 2026-05-23 - Local Git Baseline
+
+### Stage
+- Growth Loop demo freeze / polish continues.
+- Local git baseline is now in place to protect the freeze point.
+- Overall progress estimate: demo freeze / polish about 82%; full MVP about 50-55%.
+
+### Product / Direction
+- The repo is now set up for local `git status` / `git diff` checks without pulling in runtime noise.
+
+### Stage Changes
+- Added `.gitignore` for Python cache, test temp data, and runtime JSONL/archive noise.
+- Added `.gitattributes` to normalize line endings on Windows.
+- Created the local baseline commit for the current freeze state.
+
+### Verified
+- `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
+- Baseline commit hash: `62b50ed` (`Initial baseline for Growth Loop demo freeze`).
+- `git status` is expected to be clean after this record update commit.
+
+### Decisions
+- Use local git only; no GitHub connection yet.
+- Keep runtime JSONL and demo archive files out of version control.
+- Keep seed/config YAML files under version control.
+
+### Risks / Open Questions
+- Whether to connect a remote GitHub repository later is still undecided.
+
+### Next
+- Continue with small demo polish, starting with `/app` Chinese text / encoding cleanup or another narrow presentation fix.
+
+### Detail Pointers
+- `.gitignore`: runtime and cache exclusions.
+- `.gitattributes`: line-ending normalization.
+- `PROJECT_RECORD.md`: stage index and baseline note.
