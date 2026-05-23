@@ -222,7 +222,8 @@ Recommended entry shape:
 
 ### Verified
 - `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
-- Pending: commit hash and final `git status` after this entry is committed.
+- Copy polish commit hash: `2bb3502` (`Polish app Chinese copy`).
+- `git status --short` was clean after the copy polish commit.
 
 ### Decisions
 - Only copy/encoding polish was changed.
