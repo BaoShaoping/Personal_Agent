@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+env/
+
+# Test temp data
+backend/tests/_tmp*/
+
+# Runtime/demo data that changes during use
+data/*.jsonl
+data/demo_reset_archive/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

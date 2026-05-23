@@ -1,0 +1,10 @@
+projects:
+  - id: personal_context_agent
+    name: Personal Context Agent
+    status: planning
+    current_goal: Implement the MVP Context Builder from local memory files.
+    tags:
+      - Personal Context Agent
+      - MVP
+      - context builder
+      - local memory

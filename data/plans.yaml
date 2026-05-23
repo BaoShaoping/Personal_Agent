@@ -1,0 +1,27 @@
+plans:
+  - id: plan_english_001
+    title: Improve English ability
+    kind: main
+    status: active
+    goal: Build enough English ability to read AI documents and express project ideas.
+    progress_percent: 12
+    cadence: daily
+    reminder_mode: passive
+    current_stage: Build vocabulary and short expression habit.
+    tags:
+      - English
+      - career growth
+      - knowledge work
+  - id: plan_personal_agent_001
+    title: Build Personal Context Agent MVP
+    kind: side
+    status: active
+    goal: Prove that local personal context and lightweight actions make an assistant more useful.
+    progress_percent: 20
+    cadence: weekly
+    reminder_mode: passive
+    current_stage: Implement module debug console and long-term plan context.
+    tags:
+      - Personal Context Agent
+      - AI product
+      - local-first

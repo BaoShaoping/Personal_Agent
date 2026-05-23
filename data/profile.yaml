@@ -1,0 +1,12 @@
+identity:
+  role_candidates:
+    - technical learner
+    - AI product explorer
+  current_focus: Personal Context Agent
+
+preferences:
+  language: zh-CN
+  answer_style:
+    - direct
+    - practical
+    - context-aware

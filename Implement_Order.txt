@@ -1,0 +1,7 @@
+Memory Store
+  -> Context Builder
+  -> Model Gateway
+  -> /ask API
+  -> Suggestion Engine
+  -> Permission Engine
+  -> Action Executor

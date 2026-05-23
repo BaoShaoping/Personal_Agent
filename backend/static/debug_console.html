@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personal Context Agent - Module Debug Console | 模块调试台</title>
+    <link rel="stylesheet" href="/static/debug_console.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Personal Context Agent - 模块调试台</h1>
+        <p>开发期模块输入输出调试工具</p>
+      </div>
+      <button id="refresh-all" type="button">全部刷新</button>
+    </header>
+
+    <main class="layout">
+      <nav class="tabs" aria-label="调试模块">
+        <button class="tab active" data-tab="context-builder" type="button">上下文构建器</button>
+        <button class="tab" data-tab="memory-store" type="button">记忆存储</button>
+        <button class="tab" data-tab="settings" type="button">设置</button>
+        <button class="tab" data-tab="model-gateway" type="button">模型网关</button>
+        <button class="tab" data-tab="suggestion-engine" type="button">建议引擎</button>
+        <button class="tab" data-tab="permission-engine" type="button">权限引擎</button>
+        <button class="tab" data-tab="audit-log" type="button">审计日志</button>
+        <button class="tab" data-tab="action-executor" type="button">动作执行器</button>
+        <button class="tab" data-tab="openclaw-adapter" type="button">OpenClaw 适配器</button>
+        <button class="tab" data-tab="system-panel" type="button">长期计划 / 系统面板</button>
+      </nav>
+
+      <section class="panel active" id="context-builder">
+        <div class="panel-heading">
+          <h2>上下文构建器</h2>
+          <span class="status implemented">已实现</span>
+        </div>
+        <div class="form-grid">
+          <label class="wide">
+            用户消息 user_message
+            <textarea id="context-message" rows="5">我们下一步怎么开发 Personal Context Agent？</textarea>
+          </label>
+          <label>
+            最大字符数 max_chars
+            <input id="context-max-chars" type="number" min="200" max="50000" value="6000" />
+          </label>
+          <label>
+            最大记忆数 max_memories
+            <input id="context-max-memories" type="number" min="0" max="100" value="8" />
+          </label>
+          <button id="build-context" type="button">构建上下文</button>
+        </div>
+        <div class="error" id="context-error" hidden></div>
+        <div class="split">
+          <section>
+            <h3>上下文 Markdown context_markdown</h3>
+            <pre class="markdown-output" id="context-markdown"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="context-json"></pre>
+          </section>
+        </div>
+        <div class="json-grid">
+          <section><h3>用户画像摘要 profile_summary</h3><pre id="context-profile"></pre></section>
+          <section><h3>当前目标 active_goals</h3><pre id="context-goals"></pre></section>
+          <section><h3>当前项目 active_projects</h3><pre id="context-projects"></pre></section>
+          <section><h3>约束 constraints</h3><pre id="context-constraints"></pre></section>
+          <section><h3>相关决策 relevant_decisions</h3><pre id="context-decisions"></pre></section>
+          <section><h3>相关记忆 relevant_memories</h3><pre id="context-memories"></pre></section>
+          <section><h3>来源 sources</h3><pre id="context-sources"></pre></section>
+          <section><h3>省略信息 omitted</h3><pre id="context-omitted"></pre></section>
+          <section><h3>统计 stats</h3><pre id="context-stats"></pre></section>
+        </div>
+      </section>
+
+      <section class="panel" id="memory-store">
+        <div class="panel-heading">
+          <h2>记忆存储</h2>
+          <button id="refresh-memory" type="button">刷新</button>
+        </div>
+        <div class="error" id="memory-error" hidden></div>
+        <div class="json-grid">
+          <section><h3>data 文件</h3><pre id="memory-files"></pre></section>
+          <section><h3>用户画像 profile</h3><pre id="memory-profile"></pre></section>
+          <section><h3>目标 goals</h3><pre id="memory-goals"></pre></section>
+          <section><h3>项目 projects</h3><pre id="memory-projects"></pre></section>
+          <section><h3>约束 constraints</h3><pre id="memory-constraints"></pre></section>
+          <section><h3>条数统计 counts</h3><pre id="memory-counts"></pre></section>
+          <section><h3>诊断 diagnostics</h3><pre id="memory-diagnostics"></pre></section>
+          <section><h3>原始 JSON raw JSON</h3><pre id="memory-json"></pre></section>
+        </div>
+      </section>
+
+      <section class="panel" id="settings">
+        <div class="panel-heading">
+          <h2>设置</h2>
+          <button id="refresh-settings" type="button">刷新</button>
+        </div>
+        <div class="notice" id="settings-notice" hidden>未找到 settings.yaml</div>
+        <div class="error" id="settings-error" hidden></div>
+        <div class="split">
+          <section><h3>设置内容 settings</h3><pre id="settings-data"></pre></section>
+          <section><h3>原始 JSON raw JSON</h3><pre id="settings-json"></pre></section>
+        </div>
+      </section>
+
+      <section class="panel" id="model-gateway">
+        <div class="panel-heading">
+          <h2>Ask / 模型网关</h2>
+          <button id="refresh-model" type="button">刷新配置</button>
+        </div>
+        <div class="error" id="model-error" hidden></div>
+
+        <div class="model-summary">
+          <section>
+            <h3>模型配置 model config</h3>
+            <pre id="model-config-json"></pre>
+          </section>
+          <section>
+            <h3>当前模式 mode</h3>
+            <div class="mode-display" id="model-mode">-</div>
+          </section>
+        </div>
+
+        <div class="form-grid">
+          <label class="wide">
+            用户消息 user_message
+            <textarea id="ask-message" rows="5">我今天应该做什么？</textarea>
+          </label>
+          <label>
+            最大字符数 max_chars
+            <input id="ask-max-chars" type="number" min="200" max="50000" value="6000" />
+          </label>
+          <label>
+            最大记忆数 max_memories
+            <input id="ask-max-memories" type="number" min="0" max="100" value="8" />
+          </label>
+          <button id="run-ask" type="button">Ask</button>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>回答 answer</h3>
+            <pre class="markdown-output" id="ask-answer"></pre>
+          </section>
+          <section>
+            <h3>模型信息 model_info</h3>
+            <pre id="ask-model-info"></pre>
+          </section>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>上下文 Markdown context_markdown</h3>
+            <pre class="markdown-output" id="ask-context-markdown"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="ask-json"></pre>
+          </section>
+        </div>
+
+        <div class="context-test">
+          <h3>模型网关测试 model gateway test</h3>
+          <button id="test-model" type="button">运行 mock/live 测试</button>
+          <pre id="model-test-json"></pre>
+        </div>
+      </section>
+      <section class="panel" id="suggestion-engine">
+        <div class="panel-heading">
+          <h2>Suggestion Engine / 建议引擎</h2>
+          <span class="status implemented">read-only</span>
+        </div>
+        <div class="error" id="suggestion-error" hidden></div>
+
+        <div class="form-grid">
+          <label class="wide">
+            user_message
+            <textarea id="suggest-message" rows="5">我今天的英语任务完成了</textarea>
+          </label>
+          <label>
+            max_chars
+            <input id="suggest-max-chars" type="number" min="200" max="50000" value="6000" />
+          </label>
+          <label>
+            max_memories
+            <input id="suggest-max-memories" type="number" min="0" max="100" value="8" />
+          </label>
+          <label class="checkbox-label">
+            <input id="suggest-include-ask" type="checkbox" checked />
+            include_ask
+          </label>
+          <label>
+            permission_mode
+            <select id="suggest-permission-mode">
+              <option value="ask_first">ask_first</option>
+              <option value="default">default</option>
+              <option value="trusted">trusted</option>
+              <option value="full_access">full_access</option>
+            </select>
+          </label>
+          <button id="run-suggest" type="button">生成建议 Suggest</button>
+        </div>
+
+        <div class="suggestion-card" id="suggestion-card">
+          <h3>建议卡片 suggestion card</h3>
+          <div id="suggestion-summary"></div>
+          <div class="suggestion-actions" id="suggestion-buttons"></div>
+        </div>
+        <div class="permission-card" id="suggestion-execution-card">
+          <h3>执行结果 execution result</h3>
+          <div id="suggestion-execution-summary"></div>
+          <pre id="suggestion-execution-json"></pre>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>操作 JSON action</h3>
+            <pre id="suggestion-action-json"></pre>
+          </section>
+          <section>
+            <h3>权限决定 permission_decision</h3>
+            <pre id="suggestion-permission-json"></pre>
+          </section>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>原因 reason</h3>
+            <pre class="markdown-output" id="suggestion-reason"></pre>
+          </section>
+          <section>
+            <h3>上下文 Markdown context_markdown</h3>
+            <pre class="markdown-output" id="suggestion-context-markdown"></pre>
+          </section>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>Ask 结果 ask_result</h3>
+            <pre id="suggestion-ask-json"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="suggestion-json"></pre>
+          </section>
+        </div>
+      </section>
+      <section class="panel" id="permission-engine">
+        <div class="panel-heading">
+          <h2>Permission Engine / 权限引擎</h2>
+          <span class="status implemented">read-only</span>
+        </div>
+        <div class="error" id="permission-error" hidden></div>
+
+        <div class="form-grid permission-form">
+          <label class="wide">
+            操作 JSON action
+            <textarea id="permission-action-json" rows="10">{
+  "kind": "update_plan_task_status",
+  "target": "task_20260502_001",
+  "payload": {
+    "status": "done",
+    "note": "用户表示任务已完成。"
+  }
+}</textarea>
+          </label>
+          <label>
+            permission_mode
+            <select id="permission-mode">
+              <option value="ask_first">ask_first</option>
+              <option value="default">default</option>
+              <option value="trusted">trusted</option>
+              <option value="full_access">full_access</option>
+            </select>
+          </label>
+          <button id="evaluate-permission" type="button">评估权限 Evaluate</button>
+        </div>
+
+        <div class="permission-card" id="permission-card">
+          <h3>权限决定 permission decision</h3>
+          <div id="permission-summary"></div>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>决定 JSON decision</h3>
+            <pre id="permission-decision-json"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="permission-json"></pre>
+          </section>
+        </div>
+      </section>
+      <section class="panel" id="audit-log">
+        <div class="panel-heading">
+          <h2>Audit Log / 审计日志</h2>
+          <button id="refresh-audit" type="button">刷新</button>
+        </div>
+        <div class="error" id="audit-error" hidden></div>
+
+        <div class="audit-layout">
+          <section>
+            <h3>最近事件 recent events</h3>
+            <div id="audit-events" class="audit-events"></div>
+          </section>
+          <section>
+            <h3>按事件类型计数 counts by event_type</h3>
+            <pre id="audit-counts-type"></pre>
+          </section>
+          <section>
+            <h3>按状态计数 counts by status</h3>
+            <pre id="audit-counts-status"></pre>
+          </section>
+        </div>
+
+        <div class="context-test">
+          <h3>手动追加测试 manual append test</h3>
+          <div class="form-grid audit-form">
+            <label>
+              event_type
+              <select id="audit-event-type">
+                <option value="suggestion_generated">suggestion_generated</option>
+                <option value="permission_evaluated" selected>permission_evaluated</option>
+                <option value="action_confirmed">action_confirmed</option>
+                <option value="action_canceled">action_canceled</option>
+                <option value="action_executed">action_executed</option>
+                <option value="action_failed">action_failed</option>
+                <option value="memory_written">memory_written</option>
+                <option value="plan_updated">plan_updated</option>
+                <option value="settings_updated">settings_updated</option>
+              </select>
+            </label>
+            <label>
+              module
+              <input id="audit-module" type="text" value="debug_console" />
+            </label>
+            <label class="wide">
+              summary
+              <input id="audit-summary" type="text" value="Manual audit event from debug console." />
+            </label>
+            <button id="append-audit" type="button">追加事件 Append Event</button>
+          </div>
+          <label>
+            payload JSON
+            <textarea id="audit-payload-json" rows="6">{
+  "note": "manual test",
+  "api_key": "should be redacted"
+}</textarea>
+          </label>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>最近追加事件 last appended event</h3>
+            <pre id="audit-append-json"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="audit-json"></pre>
+          </section>
+        </div>
+      </section>
+      <section class="panel" id="action-executor">
+        <div class="panel-heading">
+          <h2>Action Executor / 动作执行器</h2>
+          <span class="status implemented">confirmed actions only</span>
+        </div>
+        <div class="error" id="action-error" hidden></div>
+
+        <div class="form-grid action-form">
+          <label class="wide">
+            操作 JSON action
+            <textarea id="action-json" rows="10">{
+  "kind": "update_plan_task_status",
+  "target": "task_20260502_001",
+  "payload": {
+    "status": "done",
+    "note": "Debug console test action."
+  }
+}</textarea>
+          </label>
+          <label>
+            permission_mode
+            <select id="action-permission-mode">
+              <option value="ask_first">ask_first</option>
+              <option value="default">default</option>
+              <option value="trusted">trusted</option>
+              <option value="full_access">full_access</option>
+            </select>
+          </label>
+          <button id="confirm-action" type="button">确认执行 Confirm Execute</button>
+          <button id="cancel-action" type="button">取消 Cancel</button>
+        </div>
+
+        <div class="permission-card" id="action-status-card">
+          <h3>动作状态 action status</h3>
+          <div id="action-status-summary">尚未执行。</div>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>执行结果 execution result</h3>
+            <pre id="action-execution-json"></pre>
+          </section>
+          <section>
+            <h3>权限决定 permission decision</h3>
+            <pre id="action-permission-json"></pre>
+          </section>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>相关审计事件 related audit events</h3>
+            <pre id="action-audit-json"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="action-json-output"></pre>
+          </section>
+        </div>
+      </section>
+      <section class="panel placeholder" id="openclaw-adapter"></section>
+      <section class="panel" id="system-panel">
+        <div class="panel-heading">
+          <h2>长期计划 / 系统面板</h2>
+          <button id="refresh-plans" type="button">刷新</button>
+        </div>
+        <div class="error" id="plans-error" hidden></div>
+
+        <div class="plan-layout">
+          <section>
+            <h3>活跃计划 active plans</h3>
+            <div id="plans-list" class="plan-list"></div>
+          </section>
+          <section>
+            <h3>今日任务 today's tasks</h3>
+            <div id="today-tasks" class="task-list"></div>
+          </section>
+        </div>
+
+        <div class="split">
+          <section>
+            <h3>最近进度 recent progress</h3>
+            <pre id="plan-progress"></pre>
+          </section>
+          <section>
+            <h3>原始 JSON raw JSON</h3>
+            <pre id="plans-json"></pre>
+          </section>
+        </div>
+
+        <div class="context-test">
+          <h3>计划上下文测试 plan context</h3>
+          <div class="form-grid compact">
+            <label class="wide">
+              测试消息 message
+              <input id="plan-context-message" type="text" value="我今天应该做什么？" />
+            </label>
+            <button id="build-plan-context" type="button">构建计划上下文</button>
+          </div>
+          <pre id="plan-context-json"></pre>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/debug_console.js"></script>
+  </body>
+</html>
