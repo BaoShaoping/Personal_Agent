@@ -90,6 +90,19 @@ function actionKindLabel(kind) {
   return labels[kind] || kind || "未知操作";
 }
 
+function eventTypeLabel(type) {
+  const labels = {
+    suggestion_generated: "建议已生成",
+    permission_evaluated: "权限已评估",
+    action_confirmed: "操作已确认",
+    action_canceled: "操作已取消",
+    action_executed: "操作已执行",
+    action_failed: "操作失败",
+    demo_seed_reset: "演示数据已重置",
+  };
+  return labels[type] || type || "记录";
+}
+
 function eventSummary(event) {
   const kindText = actionKindLabel(event.action_kind || "");
   const labels = {
@@ -100,6 +113,13 @@ function eventSummary(event) {
     action_failed: `操作失败：${kindText}。`,
   };
   return labels[event.event_type] || event.summary || "";
+}
+
+function auditMetaLabel(event) {
+  if (event.action_kind) {
+    return actionKindLabel(event.action_kind);
+  }
+  return event.module || "";
 }
 
 function friendlyPermissionReason(reason) {
@@ -440,7 +460,7 @@ async function confirmLatestAction() {
     await refreshDashboard();
     if (execution.status === "executed") {
       pulseTodayTaskCount();
-      showToast("已确认执行，今日任务和 Audit 已刷新。");
+      showToast("已确认执行，今日任务和审计记录已刷新。");
     }
   } catch (error) {
     showToast(error.message);
@@ -487,7 +507,7 @@ function renderExecution(execution) {
   if (status === "canceled") {
     target.textContent = `已取消：${actionKindLabel(kind)}。已写入最近记录，未执行操作。`;
   } else if (status === "executed" && kind === "create_today_task_candidate") {
-    target.textContent = "已确认执行：今日最小任务已创建，任务列表和 Audit 记录已刷新。";
+    target.textContent = "已确认执行：今日最小任务已创建，任务列表和审计记录已刷新。";
   } else if (status === "executed") {
     target.textContent = `已确认执行：${actionKindLabel(kind)} 已完成。`;
   } else if (status === "failed") {
@@ -525,11 +545,11 @@ function renderAudit(events) {
       (event) => `
         <article class="audit-item ${escapeHtml(event.status || "")}">
           <div class="section-title">
-            <span class="audit-type">${escapeHtml(event.event_type || "event")}</span>
+            <span class="audit-type">${escapeHtml(eventTypeLabel(event.event_type))}</span>
             <span>${statusLabel(event.status)}</span>
           </div>
           <div class="audit-summary">${escapeHtml(eventSummary(event))}</div>
-          <div class="audit-meta">created_at: ${formatTime(event.created_at)} · ${escapeHtml(event.action_kind || event.module || "")}</div>
+          <div class="audit-meta">时间：${formatTime(event.created_at)} · ${escapeHtml(auditMetaLabel(event))}</div>
           <details class="json-details">
             <summary>查看 JSON</summary>
             <pre>${escapeHtml(pretty(event))}</pre>

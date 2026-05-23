@@ -1452,12 +1452,13 @@ Current tests cover:
 - Action Executor cancel/fail/success paths, today task creation, plan task updates, plan creation, memory/decision writes, audit redaction, action APIs, and real Action Executor debug tab.
 - Demo Seed Reset Helper archiving today's tasks only, preserving older tasks and `plans.yaml`, writing audit events, and no-op behavior when today's task list is already empty.
 - App smoke coverage for `/app`, `app.js`, `app.css`, reset-to-empty demo state, suggest-with-permission, confirm execution, refreshed today task list, `action_executed` audit events, and JSON traceability markers. This is Flask/API-level coverage rather than real browser automation.
+- `/app` visible Chinese copy smoke markers, including the user-facing growth-system labels after UTF-8 copy polish.
 - Debug API debug page, context build, memory missing files, settings missing, modules list, plan summary, task status update.
 
 ## Open Questions / Inconsistencies
 
 - `MVP_PLAN.md` settings example omits current model fields `temperature`, `max_tokens`, and `mode`; `data/settings.yaml` includes them.
-- Some test/UI Chinese strings appear as mojibake in PowerShell output. The files are still executable and tests pass, but future UI cleanup should normalize visible Chinese text carefully.
+- Some Chinese strings can still appear as mojibake in PowerShell output. `/app` static source files have been checked as UTF-8 and visible copy has been polished; future cleanup should treat terminal rendering separately from file contents.
 - `plan_tasks.jsonl` seed tasks are dated `2026-05-02`. `list_today_tasks()` uses `date.today()` when no explicit date is passed, so `/app` may show no today's tasks on later dates. This is acceptable for the first demo because the empty state can now request a `create_today_task_candidate` through the normal suggestion/confirmation flow.
 - Memory Store currently has no public write API; the Action Executor owns the narrow `save_memory_candidate` append path for now.
 - Plan Store currently supports updating task status and appending progress, but not creating/updating plans; the Action Executor owns the narrow `create_plan_candidate` append path for now.

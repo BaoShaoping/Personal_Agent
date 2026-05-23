@@ -27,6 +27,8 @@ def test_app_page_returns_200_and_references_assets():
 
     assert response.status_code == 200
     assert "Personal Agent" in response.text
+    assert "本地成长系统" in response.text
+    assert "成长闭环" in response.text
     assert 'href="/static/app.css"' in response.text
     assert 'src="/static/app.js"' in response.text
 

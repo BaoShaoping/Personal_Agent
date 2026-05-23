@@ -63,6 +63,9 @@ def test_app_growth_loop_freeze_path_smoke(monkeypatch):
         assert '<main class="app-shell">' in app_response.text
         assert 'id="action-card"' in app_response.text
         assert 'id="action-json"' in app_response.text
+        assert "本地成长系统" in app_response.text
+        assert "成长闭环" in app_response.text
+        assert "审计记录" in js_response.text
         assert "GENERATE_TODAY_TASK_PROMPT" in js_response.text
         assert "/api/suggest/with-permission" in js_response.text
         assert "/api/actions/confirm" in js_response.text

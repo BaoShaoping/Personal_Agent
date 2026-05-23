@@ -205,3 +205,40 @@ Recommended entry shape:
 - `.gitignore`: runtime and cache exclusions.
 - `.gitattributes`: line-ending normalization.
 - `PROJECT_RECORD.md`: stage index and baseline note.
+
+## 2026-05-23 - App Chinese Copy Polish
+
+### Stage
+- Growth Loop demo freeze / polish continues.
+- Overall progress estimate: demo freeze / polish about 82%; full MVP about 50-55%.
+
+### Product / Direction
+- Improve `/app` presentation trust by making visible Chinese labels and status text cleaner for demos.
+
+### Stage Changes
+- Confirmed `/app` static files are valid UTF-8 rather than file-level encoding corruption.
+- Polished visible `/app` copy for system labels, growth loop labels, action risk label, execution toasts, and audit record summaries.
+- Updated app smoke/debug tests to keep key visible copy markers covered.
+
+### Verified
+- `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
+- Pending: commit hash and final `git status` after this entry is committed.
+
+### Decisions
+- Only copy/encoding polish was changed.
+- Action schema, API routes, backend core loop, data files, reset helper behavior, and smoke-test business path were left unchanged.
+
+### Risks / Open Questions
+- True browser visual/click verification is still not covered by automated tests.
+- Some terminal output may still render Chinese poorly even when source files are valid UTF-8.
+
+### Next
+- Run a short demo rehearsal from reset to confirm in a real browser, or continue with another small presentation polish task.
+
+### Detail Pointers
+- `backend/static/app.html`: visible app labels.
+- `backend/static/app.js`: visible app status, action, and audit copy.
+- `backend/tests/test_app_smoke.py`: app smoke visible-copy markers.
+- `backend/tests/test_debug_api.py`: app page visible-copy checks.
+- `DEMO_STATUS.md`: current demo polish status.
+- `MODULE_INTERFACES.md`: test coverage and encoding note.
