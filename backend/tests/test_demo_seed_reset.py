@@ -45,7 +45,7 @@ def test_reset_demo_today_tasks_archives_only_tasks_dated_today():
     }
     try:
         before_plans = (data_dir / "plans.yaml").read_bytes()
-        with (data_dir / "plan_tasks.jsonl").open("a", encoding="utf-8") as handle:
+        with (data_dir / "plan_tasks.jsonl").open("w", encoding="utf-8") as handle:
             handle.write(json.dumps(today_task, ensure_ascii=False) + "\n")
             handle.write(json.dumps(old_task, ensure_ascii=False) + "\n")
 
@@ -76,7 +76,17 @@ def test_reset_demo_today_tasks_archives_only_tasks_dated_today():
 def test_reset_demo_today_tasks_is_noop_when_today_is_already_empty():
     data_dir = _copy_data("_tmp_demo_seed_reset_empty")
     target_day = date(2026, 5, 24)
+    old_task = {
+        "id": "task_demo_old_002",
+        "plan_id": "plan_english_001",
+        "date": "2026-05-22",
+        "title": "Older task that should remain active",
+        "status": "todo",
+        "source": "test",
+    }
     try:
+        with (data_dir / "plan_tasks.jsonl").open("w", encoding="utf-8") as handle:
+            handle.write(json.dumps(old_task, ensure_ascii=False) + "\n")
         before_tasks = (data_dir / "plan_tasks.jsonl").read_bytes()
 
         result = reset_demo_today_tasks(data_dir=data_dir, today=target_day)
