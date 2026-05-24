@@ -28,6 +28,8 @@ long-term plan -> today's minimal task -> confirm execution -> today's task -> a
 - The freeze path now has a Flask/API-level app smoke test covering `/app`, static assets, reset-to-empty state, suggestion, confirmation, task refresh, audit `action_executed`, and JSON traceability markers. It is not a real browser automation test.
 - `/app` visible Chinese copy has been polished in UTF-8 source files; remaining encoding risk is mostly terminal/display-tool rendering, not the app files themselves.
 - User manual rehearsal in a real browser confirmed the `/app` visual presentation and Chinese copy are correct. This reduces the current layout/click risk, but it is not an automated browser smoke test.
+- Formal rehearsal checks on 2026-05-24 passed for reset, full pytest, `/app`, static assets, `/api/plans/summary`, and key Chinese copy markers.
+- `PRODUCT_OVERVIEW.md` now describes the current demo as a real local-first product surface, including positioning, capabilities, trust model, local data, non-goals, and near-term roadmap.
 - Actions still require explicit confirmation in `ask_first` mode.
 - Audit JSON is for traceability, not for everyday user reading.
 - The project does not yet include OpenClaw integration, desktop packaging, voice, sync, or generic Todo management.
@@ -36,5 +38,6 @@ long-term plan -> today's minimal task -> confirm execution -> today's task -> a
 ## Candidate Next Directions
 
 - Use the pre-demo rehearsal checklist before presentations.
+- Use `PRODUCT_OVERVIEW.md` when explaining the product to a new reviewer.
 - Add true browser automation only if a stable browser dependency is already available and the demo needs layout/click regression coverage.
 - Decide whether the next milestone is deeper Growth Loop behavior or packaging/presentation work.

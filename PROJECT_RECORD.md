@@ -279,3 +279,41 @@ Recommended entry shape:
 - `DEMO_GUIDE.md`: pre-demo rehearsal checklist.
 - `DEMO_STATUS.md`: manual real-browser rehearsal status.
 - `PROJECT_RECORD.md`: stage index and verification summary.
+
+## 2026-05-24 - Product Overview And Formal Rehearsal
+
+### Stage
+- Growth Loop demo freeze / polish is effectively demo-ready.
+- Overall progress estimate: demo freeze / polish about 94%; full MVP about 55%.
+
+### Product / Direction
+- The project now has a product-facing overview that presents Personal Agent as a real local-first growth system panel rather than only a code demo.
+
+### Stage Changes
+- Added `PRODUCT_OVERVIEW.md` covering positioning, target user, main experience, current capabilities, trust model, local-first data, demo readiness, non-goals, and near-term roadmap.
+- Ran a formal rehearsal pass using the reset helper, automated tests, Flask test client checks, and key Chinese copy checks.
+- Confirmed `DEMO_GUIDE.md` stores the visible checklist text as valid UTF-8; any observed mojibake is terminal rendering, not file corruption.
+
+### Verified
+- `C:\Users\STAR\.conda\envs\py39\python.exe scripts\reset_demo_seed.py` reported success with `removed_count: 0` for 2026-05-24 because today's task list was already empty.
+- `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
+- Flask test client checks returned `200` for `/app`, `/static/app.js`, `/static/app.css`, and `/api/plans/summary`.
+- `/app` HTML contains the key Chinese copy markers `本地成长系统` and `成长闭环`.
+
+### Decisions
+- Treat the current Growth Loop demo as functionally complete for the freeze scope.
+- Keep future work to demo rehearsal and small presentation polish unless a concrete issue appears.
+- Keep `PRODUCT_OVERVIEW.md` product-facing and keep implementation details in module docs, tests, and code.
+
+### Risks / Open Questions
+- Automated browser layout/click coverage still does not exist.
+- The next milestone remains undecided: deeper Growth Loop behavior or packaging/presentation work.
+
+### Next
+- Use `DEMO_GUIDE.md` and `PRODUCT_OVERVIEW.md` for formal presentations.
+- Decide the next milestone only after the current demo has been shown or reviewed.
+
+### Detail Pointers
+- `PRODUCT_OVERVIEW.md`: product-facing explanation.
+- `DEMO_GUIDE.md`: rehearsal checklist.
+- `DEMO_STATUS.md`: current demo readiness and limits.
