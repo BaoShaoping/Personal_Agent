@@ -260,7 +260,8 @@ Recommended entry shape:
 ### Verified
 - User manual rehearsal in a real browser confirmed `/app` visual presentation and Chinese copy are correct.
 - `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
-- Pending: commit this documentation update and verify final `git status`.
+- Documentation commit hash: `96731c7` (`Record demo rehearsal checklist`).
+- `git status --short` is expected to be clean after this record update commit.
 
 ### Decisions
 - Treat the real-browser rehearsal as manual verification, not automated browser smoke coverage.
