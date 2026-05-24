@@ -1,136 +1,136 @@
-# Personal Agent Product Overview
+# Personal Agent 产品说明
 
-## Product Positioning
+## 产品定位
 
-Personal Agent is a local-first personal growth system panel.
+Personal Agent 是一个本地优先的个人成长系统面板。
 
-It helps a user keep long-term plans connected to a concrete daily action. The current product is intentionally narrow: it is not a generic Todo app, not a broad autonomous agent runtime, not a Codex replacement, and not an OpenClaw replacement.
+它帮助用户把长期计划连接到当天可以执行的具体行动。当前产品刻意保持克制：它不是通用 Todo 应用，不是宽泛的自主 Agent 运行时，不是 Codex 替代品，也不是 OpenClaw 替代品。
 
-The core promise is:
+它的核心承诺是：
 
 ```text
-long-term plan -> today's minimal task -> confirm execution -> today's task -> audit record
+长期计划 -> 今天的最小任务 -> 确认执行 -> 今日任务 -> 审计记录
 ```
 
-## Target User
+## 目标用户
 
-Personal Agent is designed for a user who is managing long-running personal improvement or project-building work and wants a local secretary-like system that remembers context, proposes a small next step, and records what happened.
+Personal Agent 面向正在推进长期个人成长或项目建设的人。这个用户需要一个类似本地秘书的系统：它能记住上下文，提出一个小的下一步，并记录发生了什么。
 
-The first demo user is a solo builder who wants to:
+第一个 demo 用户是独立建设者，他希望：
 
-- keep active long-term plans visible
-- reduce daily decision friction
-- avoid opaque automation
-- confirm actions before local data is changed
-- inspect what the system did through audit records
+- 持续看到当前激活的长期计划
+- 减少每天决定下一步做什么的摩擦
+- 避免不透明的自动化
+- 在本地数据被修改前明确确认
+- 通过审计记录检查系统做了什么
 
-## Main Experience
+## 主体验
 
-The main product surface is:
+主要产品界面是：
 
 ```text
 http://127.0.0.1:5000/app
 ```
 
-The `/app` page acts as a local growth dashboard. It shows active long-term plans, today's status, today's task list, recent progress, a conversation area, confirmable suggestions, and recent audit records.
+`/app` 页面是一个本地成长仪表盘。它展示激活中的长期计划、今日状态、今日任务列表、最近进展、对话区域、可确认的建议，以及最近的审计记录。
 
-The intended first-use loop is:
+预期的首次使用闭环是：
 
-1. The user opens the growth dashboard.
-2. The dashboard shows active long-term plans and today's task state.
-3. If today's task list is empty, the user asks for one minimal task.
-4. Personal Agent proposes a confirmable action.
-5. The user confirms execution.
-6. The system writes the new task into today's task list.
-7. The audit panel records the permission and execution trail.
-8. JSON details can be expanded for traceability.
+1. 用户打开成长仪表盘。
+2. 仪表盘展示长期计划和今日任务状态。
+3. 如果今日任务列表为空，用户请求一个今天的最小任务。
+4. Personal Agent 提出一个可确认的操作。
+5. 用户确认执行。
+6. 系统把新任务写入今日任务列表。
+7. 审计面板记录权限评估和执行轨迹。
+8. JSON 详情可以展开，用于追踪和核验。
 
-## Current Capabilities
+## 当前能力
 
-The current demo can:
+当前 demo 可以：
 
-- load active plans from local files
-- show today's task count and active plan count
-- generate a minimal task for today from an active long-term plan
-- require explicit confirmation before writing the task
-- append the confirmed task to today's task list
-- show recent progress and audit events
-- expand raw JSON details for debugging and trust
-- reset demo seed data so a presentation can start from an empty today-task list
-- run a Flask/API-level smoke test for the freeze path
+- 从本地文件加载激活中的长期计划
+- 展示今日任务数量和激活计划数量
+- 基于激活中的长期计划生成一个今天的最小任务
+- 在写入任务前要求用户明确确认
+- 把确认后的任务追加到今日任务列表
+- 展示最近进展和审计事件
+- 展开原始 JSON 细节，用于调试和建立信任
+- 重置 demo seed data，让演示可以从“今日任务为空”开始
+- 通过 Flask/API 层 smoke test 覆盖 freeze 路径
 
-## Trust And Safety Model
+## 信任与安全模型
 
-The product uses an ask-first model for meaningful local writes.
+产品对有意义的本地写入采用 ask-first 模式。
 
-For the current Growth Loop demo, Personal Agent does not silently create tasks. It proposes an action, evaluates permission/risk, waits for confirmation, executes only after confirmation, and writes an audit event.
+在当前 Growth Loop demo 中，Personal Agent 不会静默创建任务。它会先提出操作，评估权限和风险，等待用户确认，只在确认后执行，并写入审计事件。
 
-This keeps the system understandable:
+这让系统保持可理解：
 
-- suggestions are visible before execution
-- confirmation is explicit
-- local data writes are narrow
-- audit records are preserved
-- raw action details remain inspectable
+- 建议在执行前可见
+- 确认动作是明确的
+- 本地数据写入范围很窄
+- 审计记录会被保留
+- 原始 action 细节可以被检查
 
-## Local-First Data
+## 本地优先数据
 
-The current demo stores data locally under:
+当前 demo 的数据存放在本地：
 
 ```text
 C:\Users\STAR\Desktop\Personal_Agent\data
 ```
 
-Important files include:
+重要文件包括：
 
-- `plans.yaml`: active long-term plans
-- `plan_tasks.jsonl`: task records
-- `plan_progress.jsonl`: progress records
-- `audit_log.jsonl`: audit records
-- `settings.yaml`: local settings
+- `plans.yaml`：激活中的长期计划
+- `plan_tasks.jsonl`：任务记录
+- `plan_progress.jsonl`：进展记录
+- `audit_log.jsonl`：审计记录
+- `settings.yaml`：本地设置
 
-Runtime JSONL files are intentionally excluded from git so personal/demo activity does not become version-control noise.
+运行时 JSONL 文件被刻意排除在 git 之外，避免个人或 demo 活动成为版本控制噪音。
 
-## Demo Readiness
+## Demo 就绪状态
 
-The current Growth Loop demo is in freeze / polish.
+当前 Growth Loop demo 处于 freeze / polish 阶段。
 
-Verified status:
+已验证状态：
 
-- seed reset helper is available
-- `/app` page and static assets are covered by smoke tests
-- core API flow is covered by smoke tests
-- visible Chinese copy has been polished
-- real-browser visual rehearsal was manually confirmed
-- full test suite passes with `93 passed`
-- local git baseline is established
+- seed reset helper 已可用
+- `/app` 页面和静态资源已被 smoke test 覆盖
+- 核心 API flow 已被 smoke test 覆盖
+- 可见中文文案已经 polish
+- 真实浏览器视觉 rehearsal 已由用户手动确认
+- 全量测试通过，结果为 `93 passed`
+- 本地 git baseline 已建立
 
-The demo should be rehearsed with `DEMO_GUIDE.md` before presentations.
+正式演示前，应按照 `DEMO_GUIDE.md` 进行 rehearsal。
 
-## Non-Goals For The Current Freeze
+## 当前 Freeze 阶段的非目标
 
-The current demo intentionally does not include:
+当前 demo 刻意不包含：
 
-- generic Todo management
-- broad autonomous automation
-- OpenClaw integration
-- desktop packaging
-- voice input or TTS
-- cloud sync or accounts
-- action schema expansion
-- backend core-loop refactors
+- 通用 Todo 管理
+- 宽泛的自主自动化
+- OpenClaw 集成
+- 桌面打包
+- 语音输入或 TTS
+- 云同步或账号系统
+- action schema 扩展
+- 后端核心闭环重构
 
-These may become future directions only if they support the Growth Loop product direction.
+这些方向只有在能支持 Growth Loop 产品方向时，才适合作为未来计划。
 
-## Near-Term Roadmap
+## 近期路线图
 
-The next product work should remain small unless the demo exposes a concrete issue.
+除非 demo 暴露出具体问题，下一步产品工作应继续保持小而稳。
 
-Good next steps:
+适合的下一步包括：
 
-- run formal demo rehearsals before presentations
-- polish copy or layout only where the user-facing demo needs it
-- decide whether the next milestone is deeper Growth Loop behavior or packaging/presentation work
-- add true browser automation only when a stable browser dependency is available and the value is clear
+- 正式演示前运行 demo rehearsal
+- 只在用户可见 demo 需要时 polish 文案或布局
+- 决定下一个里程碑是更深入的 Growth Loop 行为，还是 packaging / presentation 工作
+- 只有当稳定浏览器依赖已经可用且价值明确时，才添加真正的浏览器自动化
 
-The product should continue to protect its main differentiator: a calm local system panel that turns long-term direction into today's smallest confirmed action.
+产品应继续保护它的主要差异点：一个安静的本地系统面板，把长期方向转化为今天最小、可确认的行动。
