@@ -8,6 +8,56 @@ The demo path is deliberately small:
 long-term plan -> today's minimal task -> confirm execution -> today's task -> audit record
 ```
 
+## Pre-Demo Rehearsal Checklist
+
+Run the reset helper from the repository root:
+
+```powershell
+cd C:\Users\STAR\Desktop\Personal_Agent
+C:\Users\STAR\.conda\envs\py39\python.exe scripts\reset_demo_seed.py
+```
+
+Run the automated test suite:
+
+```powershell
+C:\Users\STAR\.conda\envs\py39\python.exe -m pytest
+```
+
+Start Flask with the project Python:
+
+```powershell
+cd C:\Users\STAR\Desktop\Personal_Agent\backend
+C:\Users\STAR\.conda\envs\py39\python.exe -m flask --app personal_agent.api run --debug --port 5000
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000/app
+```
+
+Manually confirm:
+
+- active long-term plans are visible
+- today's task list starts empty
+- `生成今日最小任务` works
+- the suggestion card appears
+- `确认执行` works
+- today's task count and task list refresh
+- recent audit records show `action_executed`
+- `查看 JSON` expands cleanly
+- narrow/mobile width remains usable
+- Chinese copy displays correctly
+
+After rehearsal, check local git status:
+
+```powershell
+cd C:\Users\STAR\Desktop\Personal_Agent
+git status --short
+```
+
+Runtime data changes such as `data\*.jsonl` and `data\demo_reset_archive\` are ignored by `.gitignore` and should not be committed.
+
 ## 1. Start The Service
 
 Before a presentation, reset the demo seed data so today's task list starts empty:

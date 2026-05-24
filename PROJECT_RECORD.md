@@ -243,3 +243,38 @@ Recommended entry shape:
 - `backend/tests/test_debug_api.py`: app page visible-copy checks.
 - `DEMO_STATUS.md`: current demo polish status.
 - `MODULE_INTERFACES.md`: test coverage and encoding note.
+
+## 2026-05-24 - Demo Rehearsal Checklist
+
+### Stage
+- Growth Loop demo freeze / polish continues.
+- Overall progress estimate: demo freeze / polish about 90%; full MVP about 55%.
+
+### Product / Direction
+- The demo is now supported by a repeatable rehearsal checklist and a manually confirmed real-browser visual pass.
+
+### Stage Changes
+- Added a pre-demo rehearsal checklist covering reset, tests, Flask startup, `/app` walkthrough, JSON expansion, narrow-width check, Chinese copy, and git status.
+- Recorded that the user manually confirmed the real browser demo visual presentation is correct.
+
+### Verified
+- User manual rehearsal in a real browser confirmed `/app` visual presentation and Chinese copy are correct.
+- `C:\Users\STAR\.conda\envs\py39\python.exe -m pytest` reported `93 passed`.
+- Pending: commit this documentation update and verify final `git status`.
+
+### Decisions
+- Treat the real-browser rehearsal as manual verification, not automated browser smoke coverage.
+- Keep this as documentation/recording work only; no action schema, API route, frontend interaction, or runtime data changes.
+
+### Risks / Open Questions
+- Automated browser layout/click coverage still does not exist.
+- A future GitHub remote remains undecided.
+
+### Next
+- Use the checklist before presentations.
+- Continue only small demo polish unless a rehearsal exposes a concrete issue.
+
+### Detail Pointers
+- `DEMO_GUIDE.md`: pre-demo rehearsal checklist.
+- `DEMO_STATUS.md`: manual real-browser rehearsal status.
+- `PROJECT_RECORD.md`: stage index and verification summary.
