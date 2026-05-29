@@ -317,3 +317,36 @@ Recommended entry shape:
 - `PRODUCT_OVERVIEW.md`: product-facing explanation.
 - `DEMO_GUIDE.md`: rehearsal checklist.
 - `DEMO_STATUS.md`: current demo readiness and limits.
+
+## 2026-05-29 - Chinese Product Overview
+
+### Stage
+- Growth Loop demo freeze / polish remains effectively demo-ready.
+- Overall progress estimate: demo freeze / polish about 95%; full MVP about 55%.
+
+### Product / Direction
+- The product-facing overview is now written in Chinese for easier presentation and handoff.
+
+### Stage Changes
+- Translated `PRODUCT_OVERVIEW.md` from English into Chinese while preserving the same product positioning, capabilities, trust model, local-first data notes, non-goals, and near-term roadmap.
+
+### Verified
+- `PRODUCT_OVERVIEW.md` is committed in Chinese.
+- Translation commit hash: `1b89dd9` (`Translate product overview to Chinese`).
+- Verified by UTF-8 file read that the document contains `Personal Agent 产品说明` and the Chinese Growth Loop wording.
+
+### Decisions
+- Keep `PRODUCT_OVERVIEW.md` as the primary product-facing explanation.
+- Keep implementation detail in code, tests, `MODULE_INTERFACES.md`, `DEMO_GUIDE.md`, and stage records.
+
+### Risks / Open Questions
+- Some PowerShell terminal output can still display Chinese as mojibake even when the file itself is valid UTF-8.
+- The next milestone remains undecided: deeper Growth Loop behavior or packaging/presentation work.
+
+### Next
+- Use `PRODUCT_OVERVIEW.md` and `DEMO_GUIDE.md` for presentation.
+- Decide the next milestone after review/demo feedback.
+
+### Detail Pointers
+- `PRODUCT_OVERVIEW.md`: Chinese product explanation.
+- `PROJECT_RECORD.md`: latest handoff index.
