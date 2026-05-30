@@ -350,3 +350,43 @@ Recommended entry shape:
 ### Detail Pointers
 - `PRODUCT_OVERVIEW.md`: Chinese product explanation.
 - `PROJECT_RECORD.md`: latest handoff index.
+
+## 2026-05-30 - System Edition Direction (Blueprint)
+
+### Stage
+- Decided to leave the Growth Loop freeze and start a new chapter: turn Personal Agent into a real-life「系统」(web-novel "System" genre). Tagline: 半真实半游戏 (half-real, half-game).
+- This session is blueprint-only (architect before builder). No code changed yet.
+
+### Product / Direction
+- Personal Agent becomes the user's real-life System: levels, five RPG attributes (智识/体魄/自律/创造/心境) derived from real plans/goals, quests from long-term plans, and rewards.
+- Encouraging tone only — rewards + 「叮！」feedback, no punishment/pressure (this deliberately reverses the old MVP no-gamification non-goal).
+- Dual currency: 经验值 EXP (progression) + 魔法点 magic points (spendable on cosmetics only). Both earned only by completing real tasks. Healthy loop (Habitica/Finch style), no pay-to-win/real-money/punishment-deduction.
+- The System is personified as a named companion = the LLM's voice. v0 visual = 🌲 growing forest (成长之地); 二次元 character art deferred to later.
+- LLM = GLM cloud (model `glm-4.5-air`) acting as the game master: generates quests + in-character narration; mock fallback keeps offline/deterministic demo.
+- Privacy reframed: 本地数据所有权 + 云端推理 + 发送内容可见 (not "never leaves the machine").
+
+### Stage Changes
+- Authored `SYSTEM_DESIGN.md` (System Edition blueprint): vision, persona, data model (`system_state.yaml` + task `rewards`), economy, quest lifecycle, visualization spec, safety/privacy rails, v0-vs-later scope, build order, test-migration, and a versioning/baseline plan.
+- Decisions locked: forest-for-v0 (avatar later), model `glm-4.5-air`, UI-first build order with a data-contract-first rule.
+
+### Verified
+- Pre-work test baseline: `93 passed` (unchanged; no code touched this session).
+
+### Decisions
+- Build order: UI first, but lock the JSON data contract before drawing UI (build panel against stub data, then implement backend to the same contract → zero rework). GLM (non-deterministic) integrated last.
+- Reward settlement goes in a new `system_engine` module, NOT by changing `update_task_status`'s return contract (protects existing tests).
+- Keep `settings.yaml` `mode: mock` as the committed default so the 93 tests stay offline/deterministic; GLM live is opt-in (env key + mode flip).
+- Versioning (proposed, pending final confirmation): tag the current Growth Loop demo as baseline `v0.1.0`; System Edition advances toward `v0.2.0` → `v1.0.0`. Avoid `Personal_Agent_v0` (repo name in tag is redundant).
+
+### Risks / Open Questions
+- Naming/tag scheme awaiting user confirmation before the git baseline tag is created.
+- Leaving freeze means we now deliberately extend the action schema / data model; must keep extensions additive and backward-compatible.
+- Cloud LLM introduces non-determinism, latency, and the cloud-privacy trade-off; mock fallback mitigates for demos.
+
+### Next
+- Confirm the version/tag naming, then create the baseline git tag (no code).
+- Then implement build-order step 0→1: lock the data contract, then the panel UI against stub data.
+
+### Detail Pointers
+- `SYSTEM_DESIGN.md`: System Edition blueprint (the authoritative direction doc for this chapter).
+- `backend/personal_agent/plan_store.py`, `action_executor.py`, `audit_log.py`, `model_gateway.py`: existing modules the System build extends.
