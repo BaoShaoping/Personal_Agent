@@ -390,3 +390,42 @@ Recommended entry shape:
 ### Detail Pointers
 - `SYSTEM_DESIGN.md`: System Edition blueprint (the authoritative direction doc for this chapter).
 - `backend/personal_agent/plan_store.py`, `action_executor.py`, `audit_log.py`, `model_gateway.py`: existing modules the System build extends.
+
+## 2026-05-30 - System Edition Steps 1-2 (Panel UI + Backend Data Layer)
+
+### Stage
+- Building System Edition on the `system-edition` branch (baseline `v0.1.0` tag = Growth Loop demo on `master`).
+- Build order (SYSTEM_DESIGN §9): step 0 contract ✓, step 1 panel UI ✓, step 2 backend data layer ✓. Next: step 3 reward settlement. Step 4 shop deferred (placeholder only). Steps 5-6 (GLM + narration) later.
+
+### Product / Direction
+- The「系统」panel is live and now backed by real local files. UI-first build worked: panel was built against a stub, then the backend was made to produce the same contract with zero UI rework.
+- Visual direction (user-approved): cyberpunk blue / sci-fi theme, neon-grid forest「成长之地」, equal-height columns; full 二次元 character art deferred.
+
+### Stage Changes
+- Step 1: `backend/static/system.{html,css,js}` — System panel (level/exp, five-dim radar, growing forest, quest lines, today tasks with reward badges, 「叮！」 feed, interactive complete-task demo). Cyberpunk theme, equal-height columns (forest fills left column so both align). Commit `db77723`.
+- Step 2: `system_engine.py` (file-backed `system_state.yaml`, atomic YAML write compatible with PyYAML and the fallback parser, `build_system_summary()`), `api.py` routes `GET /system` + `GET /api/system/summary` (additive), `system.js` now fetches the live summary with embedded-stub fallback, `data/system_state.yaml` seed.
+
+### Verified
+- Full suite: `100 passed` (93 prior + 7 new `test_system_engine.py`).
+- `GET /system` and `GET /api/system/summary` return 200; summary reflects real data: level 4 (exp 70/250), magic 145, five attributes (40/20/35/30/25), forest 「小林」 growth 12, quest lines from real active plans, today tasks with auto-inferred reward attributes.
+
+### Decisions
+- Storage: local files, NOT a database (single-user, tiny data, transparency is a product value). `system_state.yaml` written atomically (temp + `os.replace`). SQLite remains a future option only if transactions/scale ever demand it.
+- Data contract decouples UI from storage: `/api/system/summary` returns the same shape regardless of backend.
+- Reward settlement stays in the new `system_engine` module (not by changing `update_task_status`'s contract), so existing tests are untouched.
+- Seed demo today-tasks created via the real `create_plan_task` (runtime data in `plan_tasks.jsonl`, gitignored, not committed) so the panel demos fully; step 5 quest generation will replace this.
+
+### Risks / Open Questions
+- Today-tasks are date-bound (`date.today()`); seeded demo tasks go stale next day until step 5 generates fresh ones.
+- `data/system_state.yaml` is committed as a seed; once step 3 mutates it at runtime it will show as a git change (revisit gitignore vs seed-template if noisy).
+- The complete-task interaction is still client-side optimistic; step 3 makes it a real, persisted, audited settlement.
+
+### Next
+- Step 3: reward settlement — on task → done, grant exp/magic/attribute/forest growth via `system_engine`, write a `reward_granted` audit event (feeds `recent_dings`), and wire the panel's 完成 button to a real endpoint.
+
+### Detail Pointers
+- `backend/personal_agent/system_engine.py`: state load/save + summary contract + derivations.
+- `backend/personal_agent/api.py`: `/system`, `/api/system/summary`.
+- `backend/static/system.js`: `loadSummary()` / `applySummary()` with stub fallback.
+- `data/system_state.yaml`: seed system state.
+- `backend/tests/test_system_engine.py`: data-layer coverage.

@@ -16,6 +16,7 @@ from .model_gateway import load_model_config, model_info
 from .permission_engine import evaluate_action, load_permission_mode
 from .plan_store import append_plan_progress, build_plan_context, plan_summary, update_task_status
 from .suggestion_engine import suggest_next_action
+from .system_engine import build_system_summary
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +26,7 @@ STATIC_DIR = BACKEND_DIR / "static"
 
 DEBUG_TITLE = "Personal Context Agent - Module Debug Console"
 APP_TITLE = "Personal Agent - 本地系统面板"
+SYSTEM_TITLE = "系统 · Personal Agent"
 
 PLACEHOLDER_MODULES = [
     {
@@ -437,6 +439,13 @@ def _read_app_html() -> str:
     return f"<!doctype html><title>{APP_TITLE}</title><h1>{APP_TITLE}</h1>"
 
 
+def _read_system_html() -> str:
+    path = STATIC_DIR / "system.html"
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    return f"<!doctype html><title>{SYSTEM_TITLE}</title><h1>{SYSTEM_TITLE}</h1>"
+
+
 app = Flask(
     __name__,
     static_folder=str(STATIC_DIR),
@@ -453,6 +462,16 @@ def app_page() -> Response:
 @app.get("/debug")
 def debug_page() -> Response:
     return Response(_read_debug_html(), mimetype="text/html")
+
+
+@app.get("/system")
+def system_page() -> Response:
+    return Response(_read_system_html(), mimetype="text/html")
+
+
+@app.get("/api/system/summary")
+def api_system_summary() -> Response:
+    return jsonify(build_system_summary(DATA_DIR))
 
 
 @app.post("/api/context/build")

@@ -91,6 +91,7 @@
 
   // --------------------------------- render ---------------------------------
   function renderHeader() {
+    document.body.setAttribute("data-theme", (state.character && state.character.theme) || "default");
     const lvl = levelInfo(state.total_exp);
     $("character-name").textContent = state.character.name;
     $("level-badge").textContent = "Lv." + lvl.level;
@@ -279,10 +280,41 @@
     showToast._t = setTimeout(() => { toast.hidden = true; }, 2400);
   }
 
+  // ----------------------------- live data load -----------------------------
+  function applySummary(data) {
+    if (data.character) state.character = data.character;
+    if (data.level && typeof data.level.total_exp === "number") state.total_exp = data.level.total_exp;
+    if (typeof data.magic_points === "number") state.magic_points = data.magic_points;
+    if (Array.isArray(data.attributes)) {
+      data.attributes.forEach((a) => {
+        if (a && a.key && state.attributes[a.key]) state.attributes[a.key] = { exp: a.exp || 0 };
+      });
+    }
+    if (data.forest) {
+      state.forest = { growth: data.forest.growth || 0, decorations: data.forest.decorations || [] };
+    }
+    if (Array.isArray(data.quest_lines)) state.quest_lines = data.quest_lines;
+    if (Array.isArray(data.today_tasks)) state.today_tasks = data.today_tasks;
+    if (Array.isArray(data.recent_dings)) state.recent_dings = data.recent_dings;
+  }
+
+  async function loadSummary() {
+    try {
+      const res = await fetch("/api/system/summary", { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!data || data.ok === false) throw new Error("bad payload");
+      applySummary(data);
+    } catch (err) {
+      // Offline / dev fallback: keep the embedded stub so the panel still renders.
+      console.warn("[system] /api/system/summary unavailable, using embedded stub:", err);
+    }
+    renderAll();
+  }
+
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
-    document.body.setAttribute("data-theme", state.character.theme || "default");
     $("shop-btn").addEventListener("click", () => showToast("商城正在施工中，敬请期待 ✦（v0 仅占位）"));
-    renderAll();
+    loadSummary();
   });
 })();
