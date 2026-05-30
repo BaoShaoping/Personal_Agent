@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>系统 · Personal Agent</title>
+    <link rel="stylesheet" href="/static/system.css" />
+  </head>
+  <body>
+    <header class="sys-topbar">
+      <div class="sys-brand">
+        <p class="eyebrow">本地成长系统 · 系统版</p>
+        <h1><span class="level-badge" id="level-badge">Lv.1</span><span id="character-name">系统</span></h1>
+        <p class="tagline">半真实半游戏 —— 真实的成长，系统的呈现</p>
+      </div>
+      <div class="sys-status">
+        <div class="exp-wrap">
+          <div class="exp-head"><span>经验</span><span id="exp-text">0 / 100</span></div>
+          <div class="exp-track"><div class="exp-fill" id="exp-fill" style="width: 0%"></div></div>
+        </div>
+        <span class="magic-pill" title="魔法点（完成任务获得，可用于外观）">✦ <span id="magic-points">0</span> 魔法点</span>
+        <button class="shop-btn" id="shop-btn" type="button">商城</button>
+        <a class="link-classic" href="/app">经典视图</a>
+      </div>
+    </header>
+
+    <main class="sys-shell">
+      <div class="col">
+        <section class="card" aria-label="今日任务">
+          <div class="card-title">
+            <h2>今日任务</h2>
+            <span id="today-count">0 项</span>
+          </div>
+          <div id="task-list"></div>
+        </section>
+
+        <section class="card forest-card" aria-label="成长之地">
+          <div class="forest-head">
+            <div>
+              <p class="eyebrow">▣ 成长之地</p>
+              <h2>你的成长，长成一片森林</h2>
+            </div>
+            <span class="forest-stage-pill" id="forest-stage">种子</span>
+          </div>
+          <div class="forest-scene" id="forest-scene">
+            <div class="forest-sky-deco" id="forest-sky"></div>
+            <div class="forest-ground" id="forest-ground"></div>
+          </div>
+          <div class="forest-foot">
+            <span id="forest-growth-text">生长度 0</span>
+            <span class="muted">每完成一个任务，森林生长一点；魔法点可装点它</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="card" aria-label="属性面板">
+          <div class="card-title">
+            <h2>属性面板</h2>
+            <span>五维</span>
+          </div>
+          <div class="radar-wrap">
+            <svg class="radar-svg" id="radar-svg" viewBox="0 0 200 200" role="img" aria-label="五维属性雷达图"></svg>
+            <div class="attr-legend" id="attr-legend"></div>
+          </div>
+        </section>
+
+        <section class="card" aria-label="任务线">
+          <div class="card-title">
+            <h2>任务线</h2>
+            <span>主线 / 支线</span>
+          </div>
+          <div id="quest-list"></div>
+        </section>
+
+        <section class="card" aria-label="系统记录">
+          <div class="card-title">
+            <h2>系统记录</h2>
+            <span>叮！</span>
+          </div>
+          <div class="ding-feed" id="ding-feed"></div>
+        </section>
+      </div>
+    </main>
+
+    <div class="toast" id="toast" hidden></div>
+    <div class="ding-overlay" id="ding-overlay" hidden></div>
+
+    <script src="/static/system.js"></script>
+  </body>
+</html>

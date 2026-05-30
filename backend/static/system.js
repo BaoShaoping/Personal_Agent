@@ -1,0 +1,288 @@
+/* System Edition panel — step 1 UI prototype.
+ *
+ * Renders entirely from an embedded STUB that mirrors the signed data
+ * contract (`GET /api/system/summary` + `data/system_state.yaml`). No backend,
+ * no GLM. The "complete task" interaction settles rewards client-side so the
+ * full loop (complete -> exp/magic/attribute -> forest growth -> 「叮！」) can be
+ * seen and felt. Step 2 swaps this STUB for a real fetch of the same shape.
+ */
+
+(function () {
+  "use strict";
+
+  // ----- contract-shaped stub state (raw; derived fields computed below) -----
+  const state = {
+    character: { name: "系统", theme: "default" },
+    total_exp: 520,
+    magic_points: 145,
+    attributes: {
+      intellect: { exp: 1600 },
+      constitution: { exp: 400 },
+      willpower: { exp: 1225 },
+      creativity: { exp: 900 },
+      spirit: { exp: 625 },
+    },
+    forest: {
+      growth: 12,
+      decorations: [
+        { id: "tree_sakura", label: "樱花树", kind: "tree" },
+        { id: "house_small", label: "小屋", kind: "building" },
+      ],
+    },
+    quest_lines: [
+      { plan_id: "plan_personal_agent_001", title: "成为 AI 建造者", kind: "main", progress_percent: 38 },
+      { plan_id: "plan_english_001", title: "英语能力", kind: "side", progress_percent: 71 },
+    ],
+    today_tasks: [
+      { id: "task_1", plan_id: "plan_english_001", title: "背 10 个单词并造 3 个句子", status: "todo",
+        rewards: { exp: 10, magic_points: 5, attribute: "intellect", attribute_exp: 15 } },
+      { id: "task_2", plan_id: "plan_personal_agent_001", title: "给系统面板写一段渲染逻辑", status: "todo",
+        rewards: { exp: 15, magic_points: 8, attribute: "creativity", attribute_exp: 20 } },
+      { id: "task_3", plan_id: "plan_english_001", title: "慢跑 20 分钟", status: "todo",
+        rewards: { exp: 10, magic_points: 5, attribute: "constitution", attribute_exp: 15 } },
+    ],
+    recent_dings: [
+      { at: "09:10", text: "叮！宿主完成「晨间阅读」，经验 +12，智识 ↑" },
+      { at: "昨天", text: "叮！成长之地新增一棵樱花树 🌸" },
+    ],
+  };
+
+  const ATTRS = [
+    { key: "intellect", label: "智识" },
+    { key: "constitution", label: "体魄" },
+    { key: "willpower", label: "自律" },
+    { key: "creativity", label: "创造" },
+    { key: "spirit", label: "心境" },
+  ];
+  const TREE_EMOJI = ["🌲", "🌳"];
+  const DECO_EMOJI = {
+    tree_sakura: "🌸", tree_pine: "🌲", tree_maple: "🍁",
+    house_small: "🏠", castle: "🏰", stele: "🗿",
+    lake: "💧", path: "🛤️", starry: "✨",
+  };
+
+  let pendingTreePop = false; // flag so the newest tree animates after a completion
+
+  // ----------------- derived helpers (mirror future backend) -----------------
+  function levelThreshold(level) { return 100 + (level - 1) * 50; }
+
+  function levelInfo(totalExp) {
+    let level = 1;
+    let remaining = Math.max(0, totalExp);
+    while (remaining >= levelThreshold(level)) {
+      remaining -= levelThreshold(level);
+      level += 1;
+    }
+    const forNext = levelThreshold(level);
+    return { level, into: remaining, forNext, pct: Math.round((remaining / forNext) * 100) };
+  }
+
+  function attrValue(exp) { return Math.floor(Math.sqrt(Math.max(0, exp))); }
+
+  function forestStage(growth) {
+    if (growth <= 0) return "种子";
+    if (growth < 4) return "萌芽";
+    if (growth < 10) return "树苗";
+    if (growth < 20) return "小林";
+    return "森林";
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  // --------------------------------- render ---------------------------------
+  function renderHeader() {
+    const lvl = levelInfo(state.total_exp);
+    $("character-name").textContent = state.character.name;
+    $("level-badge").textContent = "Lv." + lvl.level;
+    $("exp-text").textContent = lvl.into + " / " + lvl.forNext;
+    $("exp-fill").style.width = Math.min(100, lvl.pct) + "%";
+    $("magic-points").textContent = state.magic_points;
+  }
+
+  function renderRadar() {
+    const values = ATTRS.map((a) => ({ label: a.label, value: attrValue(state.attributes[a.key].exp) }));
+    const maxVal = Math.max(1, ...values.map((v) => v.value));
+    const cx = 100, cy = 100, R = 70;
+    const n = values.length;
+    const ang = (i) => ((-90 + (i * 360) / n) * Math.PI) / 180;
+    const pt = (i, r) => [(cx + Math.cos(ang(i)) * r).toFixed(1), (cy + Math.sin(ang(i)) * r).toFixed(1)];
+
+    let svg = "";
+    [0.25, 0.5, 0.75, 1].forEach((ring) => {
+      const pts = values.map((_, i) => pt(i, R * ring).join(",")).join(" ");
+      svg += '<polygon class="radar-grid-line" points="' + pts + '" />';
+    });
+    values.forEach((_, i) => {
+      const [x, y] = pt(i, R);
+      svg += '<line class="radar-axis" x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '" />';
+    });
+    const areaPts = values.map((v, i) => pt(i, R * (v.value / maxVal)).join(",")).join(" ");
+    svg += '<polygon class="radar-area" points="' + areaPts + '" />';
+    values.forEach((v, i) => {
+      const [x, y] = pt(i, R * (v.value / maxVal));
+      svg += '<circle class="radar-dot" r="2.6" cx="' + x + '" cy="' + y + '" />';
+    });
+    values.forEach((v, i) => {
+      const [x, y] = pt(i, R + 16);
+      svg += '<text class="radar-label" x="' + x + '" y="' + y + '" text-anchor="middle" dominant-baseline="middle">' + v.label + "</text>";
+    });
+    $("radar-svg").innerHTML = svg;
+
+    const legend = values
+      .map((v) => {
+        const w = Math.round((v.value / maxVal) * 100);
+        return (
+          '<div class="attr-row"><span class="attr-name">' + v.label + "</span>" +
+          '<span class="attr-track"><span class="attr-fill" style="width:' + w + '%"></span></span>' +
+          '<span class="attr-val">' + v.value + "</span></div>"
+        );
+      })
+      .join("");
+    $("attr-legend").innerHTML = legend;
+  }
+
+  function renderForest() {
+    const growth = state.forest.growth;
+    $("forest-stage").textContent = forestStage(growth);
+    $("forest-growth-text").textContent = "生长度 " + growth;
+
+    const hasStarry = state.forest.decorations.some((d) => d.id === "starry");
+    $("forest-sky").innerHTML = (hasStarry ? "✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧" : "✦ ✧ ✦ ✧ ✦ ✧")
+      .split(" ").map((c) => "<span>" + c + "</span>").join("");
+
+    const treeCount = Math.max(0, Math.min(growth, 26));
+    let trees = "";
+    for (let i = 0; i < treeCount; i++) {
+      const last = pendingTreePop && i === treeCount - 1;
+      trees += '<span class="tree' + (last ? " pop" : "") + '">' + TREE_EMOJI[i % TREE_EMOJI.length] + "</span>";
+    }
+    const decos = state.forest.decorations
+      .map((d) => '<span class="deco" title="' + d.label + '">' + (DECO_EMOJI[d.id] || "🌟") + "</span>")
+      .join("");
+    $("forest-ground").innerHTML = trees + decos;
+    pendingTreePop = false;
+  }
+
+  function renderQuests() {
+    $("quest-list").innerHTML = state.quest_lines
+      .map((q) => {
+        const kindLabel = q.kind === "main" ? "主线" : "支线";
+        return (
+          '<div class="quest"><div class="quest-head">' +
+          '<span class="quest-title">' + q.title + "</span>" +
+          '<span class="quest-kind ' + q.kind + '">' + kindLabel + "</span></div>" +
+          '<div class="quest-track"><div class="quest-fill" style="width:' + q.progress_percent + '%"></div></div>' +
+          '<div class="quest-pct">' + q.progress_percent + "%</div></div>"
+        );
+      })
+      .join("");
+  }
+
+  function renderTasks() {
+    const tasks = state.today_tasks;
+    const remaining = tasks.filter((t) => t.status !== "done").length;
+    $("today-count").textContent = remaining + " 项待完成 / 共 " + tasks.length + " 项";
+
+    if (!tasks.length) {
+      $("task-list").innerHTML = '<p class="muted">今日暂无任务。</p>';
+      return;
+    }
+    $("task-list").innerHTML = tasks
+      .map((t) => {
+        const r = t.rewards || {};
+        const attrLabel = (ATTRS.find((a) => a.key === r.attribute) || {}).label || "";
+        const badges =
+          '<span class="reward-badge exp">经验 +' + (r.exp || 0) + "</span>" +
+          '<span class="reward-badge magic">✦ +' + (r.magic_points || 0) + "</span>" +
+          (attrLabel ? '<span class="reward-badge attr">' + attrLabel + " +" + (r.attribute_exp || 0) + "</span>" : "");
+        const done = t.status === "done";
+        const btn = done
+          ? '<button class="task-do" disabled>已完成</button>'
+          : '<button class="task-do" data-task="' + t.id + '">完成</button>';
+        return (
+          '<div class="sys-task' + (done ? " done" : "") + '">' +
+          '<div class="task-main"><div class="task-name">' + t.title + "</div>" +
+          '<div class="reward-row">' + badges + "</div></div>" + btn + "</div>"
+        );
+      })
+      .join("");
+
+    $("task-list").querySelectorAll("button[data-task]").forEach((b) => {
+      b.addEventListener("click", () => completeTask(b.getAttribute("data-task")));
+    });
+  }
+
+  function renderDings() {
+    $("ding-feed").innerHTML = state.recent_dings
+      .map((d) => '<div class="ding-item"><span class="at">' + d.at + "</span><span>" + d.text + "</span></div>")
+      .join("");
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderRadar();
+    renderForest();
+    renderQuests();
+    renderTasks();
+    renderDings();
+  }
+
+  // ------------------------------ interaction -------------------------------
+  function nowHHMM() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function completeTask(taskId) {
+    const task = state.today_tasks.find((t) => t.id === taskId);
+    if (!task || task.status === "done") return;
+
+    const before = levelInfo(state.total_exp).level;
+    const r = task.rewards || {};
+    task.status = "done";
+    state.total_exp += r.exp || 0;
+    state.magic_points += r.magic_points || 0;
+    if (r.attribute && state.attributes[r.attribute]) {
+      state.attributes[r.attribute].exp += r.attribute_exp || 0;
+    }
+    state.forest.growth += 1;
+    pendingTreePop = true;
+
+    const attrLabel = (ATTRS.find((a) => a.key === r.attribute) || {}).label || "";
+    const dingText =
+      "叮！宿主完成「" + task.title + "」，经验 +" + (r.exp || 0) +
+      "，✦ +" + (r.magic_points || 0) + (attrLabel ? "，" + attrLabel + " ↑" : "");
+    state.recent_dings.unshift({ at: nowHHMM(), text: dingText });
+
+    const after = levelInfo(state.total_exp).level;
+    const leveledUp = after > before;
+
+    renderAll();
+    showDingBurst(leveledUp ? "升级！ Lv." + after : "叮！", dingText.replace(/^叮！/, ""));
+    if (leveledUp) $("level-badge").classList.add("levelup-flash");
+    setTimeout(() => $("level-badge").classList.remove("levelup-flash"), 1300);
+  }
+
+  function showDingBurst(big, sub) {
+    const overlay = $("ding-overlay");
+    overlay.innerHTML = '<div class="ding-burst"><span class="big">' + big + '</span><span class="sub">' + sub + "</span></div>";
+    overlay.hidden = false;
+    clearTimeout(showDingBurst._t);
+    showDingBurst._t = setTimeout(() => { overlay.hidden = true; overlay.innerHTML = ""; }, 1500);
+  }
+
+  function showToast(text) {
+    const toast = $("toast");
+    toast.textContent = text;
+    toast.hidden = false;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.hidden = true; }, 2400);
+  }
+
+  // --------------------------------- init -----------------------------------
+  document.addEventListener("DOMContentLoaded", function () {
+    document.body.setAttribute("data-theme", state.character.theme || "default");
+    $("shop-btn").addEventListener("click", () => showToast("商城正在施工中，敬请期待 ✦（v0 仅占位）"));
+    renderAll();
+  });
+})();
