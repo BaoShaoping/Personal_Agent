@@ -717,6 +717,36 @@ Recommended entry shape:
 ### Detail Pointers
 - `SYSTEM_DESIGN.md` §12: the memory-layer blueprint.
 
+## 2026-06-06 - Merge to master + v0.2.0 + Hosted-Beta Blueprint
+
+### Stage
+- `system-edition` merged into `master` (fast-forward); tagged **`v0.2.0`** = "System Edition v0, local single-user complete". Next chapter: a hosted multi-user beta for real-user feedback.
+
+### Product / Direction
+- Decided to take the product to normal users via a shareable URL (closed beta first, like a game test server). Reframed the architecture to fit the user's constraints (no server-side storage, key allows max 3 concurrent requests, public model = glm-4.5-air).
+
+### Stage Changes
+- Merged to `master`; `v0.2.0` annotated tag.
+- Stopped tracking `data/system_state.yaml` (now gitignored) so a fresh clone / beta tester starts at Lv.1; runtime progress stays local.
+- Authored `HOSTED_BETA_DESIGN.md` (blueprint, not built): **thin stateless GLM proxy + browser-side data**. Server stores nothing; user growth data lives in localStorage (reusing the client-side logic already in system.js from the stub/fallback era); server only serves the SPA + proxies GLM (holds key, ≤3-concurrency queue, glm-4.5-air via env). Email collected via an external form for the tester list only (option a). Local-first preserved even when hosted.
+
+### Decisions
+- Hosted beta uses glm-4.5-air (fast/cheap); local dev keeps glm-4.6 (model via per-deploy env override).
+- Server is stateless/zero-storage; data is client-side (localStorage). Multi-user isolation is free (per-browser). The ≤3-concurrency key limit is handled by a proxy queue + graceful degrade to rule/template when saturated.
+- Keep glm-4.6 confirmed for local; `glm-4.6v` rejected for our text use (returns empty content — it is the vision variant).
+
+### Risks / Open Questions
+- No hosting platform yet (暂无服务器); pick a small host / serverless for the thin proxy when ready.
+- Browser-side data means a tester who clears storage / switches device loses progress (acceptable for a beta; email is not linked to data).
+- Cost-cap + rate-limit thresholds and the external email/feedback collector are still TBD.
+
+### Next
+- When ready to build: Phase 1 (localStorage as source of truth, client-side as primary — works with no server), Phase 2 (thin GLM proxy with ≤3 queue + env model), Phase 3 (email gate + feedback + deploy → closed beta).
+
+### Detail Pointers
+- `HOSTED_BETA_DESIGN.md`: the hosted-beta architecture blueprint.
+- tag `v0.2.0`: local single-user baseline before the hosted chapter.
+
 ## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
 
 ### Stage
