@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .model_gateway import generate_response, load_model_config, with_glm_options
+from .model_gateway import boost_max_tokens, generate_response, load_model_config
 
 
 NARRATION_PROMPT = """你是宿主的专属「系统」。宿主刚刚完成了一个任务。
@@ -65,7 +65,7 @@ def _llm_narration(
         user += f"，并升到了 Lv.{level}"
     response = generate_response(
         [{"role": "system", "content": NARRATION_PROMPT}, {"role": "user", "content": user}],
-        with_glm_options(config, disable_thinking=True),
+        boost_max_tokens(config),
     )
     if not response.get("ok"):
         return None

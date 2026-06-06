@@ -98,6 +98,8 @@
     $("exp-text").textContent = lvl.into + " / " + lvl.forNext;
     $("exp-fill").style.width = Math.min(100, lvl.pct) + "%";
     $("magic-points").textContent = state.magic_points;
+    // Show the small yellow "Mock" badge only when not running live (no GLM key).
+    $("mock-badge").hidden = !!(state.model && state.model.live);
   }
 
   function renderRadar() {
@@ -325,6 +327,7 @@
     if (Array.isArray(data.quest_lines)) state.quest_lines = data.quest_lines;
     if (Array.isArray(data.today_tasks)) state.today_tasks = data.today_tasks;
     if (Array.isArray(data.recent_dings)) state.recent_dings = data.recent_dings;
+    if (data.model) state.model = data.model;
   }
 
   async function loadSummary() {

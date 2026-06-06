@@ -128,6 +128,18 @@ def test_build_system_summary_shape(tmp_path):
     assert summary["recent_dings"] == []
 
 
+def test_summary_model_field_reflects_key(tmp_path, monkeypatch):
+    (tmp_path / "settings.yaml").write_text(
+        "model:\n  mode: live\n  model_name: glm-4.5-air\n  api_key_env: PERSONAL_AGENT_API_KEY\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("PERSONAL_AGENT_API_KEY", raising=False)
+    assert build_system_summary(tmp_path)["model"]["live"] is False  # no key -> mock fallback
+
+    monkeypatch.setenv("PERSONAL_AGENT_API_KEY", "k")
+    assert build_system_summary(tmp_path)["model"]["live"] is True
+
+
 def _setup_settlement(tmp_path, total_exp=0, task_rewards=None):
     (tmp_path / "plans.yaml").write_text(
         "plans:\n  - id: plan_eng\n    title: 英语能力\n    kind: side\n    status: active\n    progress_percent: 10\n",

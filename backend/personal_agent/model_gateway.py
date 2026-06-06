@@ -80,6 +80,12 @@ def build_model_messages(user_message: str, context_markdown: str) -> list[dict[
 
 def generate_response(messages: list[dict[str, str]], model_config: dict[str, Any]) -> dict[str, Any]:
     config = _normalize_model_config(model_config)
+
+    # Auto-fallback: when live is requested but no API key is available, run mock
+    # so the panel still works offline. (Mode mock also lands here.)
+    if effective_mode(config) == "mock":
+        return _mock_response(messages, dict(config, mode="mock"))
+
     errors = validate_model_config(config)
     if errors:
         return {
@@ -89,9 +95,6 @@ def generate_response(messages: list[dict[str, str]], model_config: dict[str, An
             "usage": None,
             "error": {"message": "; ".join(errors), "details": errors},
         }
-
-    if config["mode"] == "mock":
-        return _mock_response(messages, config)
 
     return _live_openai_compatible_response(messages, config)
 
@@ -121,20 +124,33 @@ def model_info(model_config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def with_glm_options(model_config: dict[str, Any], *, disable_thinking: bool = False) -> dict[str, Any]:
-    """Return a config copy carrying GLM-specific request options.
+def effective_mode(model_config: dict[str, Any]) -> str:
+    """The mode actually used: live only when requested AND a key is available.
 
-    GLM-4.5 models reason by default, which is wasteful for short structured tasks
-    (quest JSON, one-line narration). Disabling thinking makes those calls faster,
-    cheaper, and more reliably parseable. The option is only applied to GLM models
-    so other OpenAI-compatible providers are unaffected.
+    Live-without-key auto-falls back to ``mock`` so the panel still works (the
+    System is the GLM brain when a key is set; without one it degrades to mock).
+    """
+
+    config = _normalize_model_config(model_config)
+    if config["mode"] == "live" and not os.getenv(str(config["api_key_env"]) or ""):
+        return "mock"
+    return config["mode"]
+
+
+def boost_max_tokens(model_config: dict[str, Any], minimum: int = 2048) -> dict[str, Any]:
+    """Return a config copy with a generous token budget.
+
+    GLM-4.5 is a reasoning model: its reasoning shares the completion budget, so a
+    small ``max_tokens`` can starve the final content. The System's GLM activities
+    (quest, narration) use this so reasoning + output never gets truncated.
     """
 
     config = dict(model_config or {})
-    if disable_thinking and str(config.get("model_name") or "").lower().startswith("glm"):
-        extra = dict(config.get("extra_body") or {})
-        extra["thinking"] = {"type": "disabled"}
-        config["extra_body"] = extra
+    try:
+        current = int(config.get("max_tokens") or 0)
+    except (TypeError, ValueError):
+        current = 0
+    config["max_tokens"] = max(current, minimum)
     return config
 
 

@@ -5,11 +5,12 @@ from pathlib import Path
 from personal_agent import model_gateway as mg
 from personal_agent.model_gateway import (
     _chat_completions_url,
+    boost_max_tokens,
     build_model_messages,
+    effective_mode,
     generate_response,
     load_model_config,
     validate_model_config,
-    with_glm_options,
 )
 
 
@@ -29,7 +30,7 @@ def test_load_model_config_reads_settings_yaml():
     assert config["max_tokens"] == 1200
 
 
-def test_live_mode_missing_api_key_returns_clear_error(monkeypatch):
+def test_live_mode_without_key_falls_back_to_mock(monkeypatch):
     monkeypatch.delenv("PERSONAL_AGENT_API_KEY", raising=False)
     config = {
         "provider": "openai_compatible",
@@ -39,12 +40,20 @@ def test_live_mode_missing_api_key_returns_clear_error(monkeypatch):
         "api_key_env": "PERSONAL_AGENT_API_KEY",
     }
 
-    errors = validate_model_config(config)
+    # validate still reports the missing key (useful for /api/model/config diagnostics)
+    assert any("PERSONAL_AGENT_API_KEY" in error for error in validate_model_config(config))
+    # but the app auto-falls back to mock so the panel still works offline
+    assert effective_mode(config) == "mock"
     response = generate_response([{"role": "user", "content": "hello"}], config)
+    assert response["ok"] is True
+    assert response["answer"].startswith("[mock answer]")
 
-    assert any("PERSONAL_AGENT_API_KEY" in error for error in errors)
-    assert response["ok"] is False
-    assert "PERSONAL_AGENT_API_KEY" in response["error"]["message"]
+
+def test_effective_mode_live_only_with_key(monkeypatch):
+    monkeypatch.setenv("PERSONAL_AGENT_API_KEY", "k")
+    live_cfg = {"mode": "live", "api_key_env": "PERSONAL_AGENT_API_KEY", "model_name": "glm-4.5-air"}
+    assert effective_mode(live_cfg) == "live"
+    assert effective_mode({"mode": "mock"}) == "mock"
 
 
 def test_mock_mode_does_not_need_network_and_is_predictable():
@@ -127,15 +136,10 @@ def test_live_mode_parses_openai_response(monkeypatch):
     assert response["usage"]["total_tokens"] == 42
 
 
-def test_with_glm_options_only_affects_glm():
-    glm = with_glm_options({"model_name": "glm-4.5-air"}, disable_thinking=True)
-    assert glm["extra_body"]["thinking"] == {"type": "disabled"}
-
-    other = with_glm_options({"model_name": "gpt-4o"}, disable_thinking=True)
-    assert "extra_body" not in other
-
-    off = with_glm_options({"model_name": "glm-4.5-air"})
-    assert "extra_body" not in off
+def test_boost_max_tokens_raises_floor_only():
+    assert boost_max_tokens({"max_tokens": 500})["max_tokens"] == 2048
+    assert boost_max_tokens({"max_tokens": 4000})["max_tokens"] == 4000
+    assert boost_max_tokens({})["max_tokens"] == 2048
 
 
 def test_live_payload_includes_extra_body(monkeypatch):

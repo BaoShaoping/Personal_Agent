@@ -22,6 +22,7 @@ from typing import Any
 
 from .audit_log import append_audit_event, read_audit_events
 from .memory_store import read_yaml_file
+from .model_gateway import effective_mode, load_model_config
 from .plan_store import list_active_plans, list_today_tasks, load_plan_data, update_task_status
 from .system_voice import narrate_completion
 
@@ -200,6 +201,9 @@ def build_system_summary(data_dir: str | Path = "data") -> dict[str, Any]:
             }
         )
 
+    model_config = load_model_config(data_dir)
+    mode = effective_mode(model_config)
+
     return {
         "ok": True,
         "character": dict(state["character"]),
@@ -210,6 +214,7 @@ def build_system_summary(data_dir: str | Path = "data") -> dict[str, Any]:
         "quest_lines": quest_lines,
         "today_tasks": today_tasks,
         "recent_dings": _recent_dings(data_dir),
+        "model": {"mode": mode, "live": mode == "live", "configured_mode": model_config.get("mode", "mock")},
         "meta": {"data_dir": str(Path(data_dir)), "updated_at": state.get("updated_at", "")},
     }
 

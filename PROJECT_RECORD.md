@@ -598,3 +598,38 @@ Recommended entry shape:
 ### Detail Pointers
 - `data/settings.yaml`: `mode: live`.
 - `backend/personal_agent/api.py`: `_build_suggestion_payload` model_override passthrough.
+
+## 2026-05-30 - GLM Is the 系统 (full reasoning) + No-Key Mock Fallback Badge
+
+### Stage
+- Two product decisions from the user applied: (1) GLM IS the System — every System activity runs on GLM with full reasoning, no economizing; (2) no-key auto-falls back to mock with a small yellow panel indicator.
+
+### Product / Direction
+- Reverted the "disable GLM reasoning" optimization: quest generation and narration now let GLM think fully (the System's reasoning IS the System). To stop reasoning from starving the output, the System's GLM calls use a generous token floor (`boost_max_tokens`, 2048).
+- Live-without-key now degrades to mock everywhere (not just quest/narration). The panel shows a small yellow "⚠ Mock" badge only when no key is detected; with a key, nothing extra is shown.
+
+### Stage Changes
+- `model_gateway`: removed `with_glm_options` (no more thinking-disable); added `effective_mode()` (live only when mode live AND key present) and `boost_max_tokens()`. `generate_response` auto-falls back to mock when live-without-key.
+- `system_quest` / `system_voice`: call GLM with `boost_max_tokens(config)`, reasoning enabled.
+- `system_engine.build_system_summary`: adds a `model` field `{mode, live, configured_mode}` so the panel knows live vs mock.
+- `system.{html,css,js}`: small yellow `#mock-badge`, shown only when `model.live` is false.
+
+### Verified
+- Full suite: `125 passed in ~2.7s`, no network (model-invoking tests force mock; live-path tests mock the socket).
+- Live (real GLM, reasoning ON, boosted tokens): quest parsed (`source: llm`, ~11s with reasoning); `build_system_summary` model field `{mode: live, live: True}` with key present.
+- New tests: `boost_max_tokens` floor, `effective_mode` key-gating, live-without-key -> mock fallback, summary model field with/without key.
+
+### Decisions
+- GLM reasoning stays ON for System activities (user: "GLM 就是系统，不用省"); accept ~10s quest latency (button shows a generating state).
+- No-key behavior is automatic fallback (not a toggle): mock everywhere + a yellow badge; key present = silent live.
+
+### Risks / Open Questions
+- Live quest generation is ~10s (reasoning). If it ever feels too slow, revisit per-call token/latency without disabling reasoning.
+
+### Next
+- Step 4 cosmetics shop; merge `system-edition` -> `master` + tag `v0.2.0`.
+
+### Detail Pointers
+- `backend/personal_agent/model_gateway.py`: `effective_mode`, `boost_max_tokens`, auto-fallback `generate_response`.
+- `backend/personal_agent/system_engine.py`: summary `model` field.
+- `backend/static/system.{html,css,js}`: `#mock-badge`.

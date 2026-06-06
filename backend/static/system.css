@@ -150,6 +150,18 @@ button:disabled { cursor: not-allowed; opacity: 0.45; box-shadow: none; }
   font-size: 13px;
   box-shadow: var(--glow-magic);
 }
+.mock-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #d4a72c;
+  background: rgba(212, 167, 44, 0.16);
+  color: #e6c25a;
+  font-size: 12px;
+  font-weight: 700;
+}
 .shop-btn {
   border-color: var(--magic);
   color: var(--magic);

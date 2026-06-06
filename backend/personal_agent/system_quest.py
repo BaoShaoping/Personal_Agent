@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 from .audit_log import append_audit_event
-from .model_gateway import generate_response, load_model_config, model_info, with_glm_options
+from .model_gateway import boost_max_tokens, generate_response, load_model_config, model_info
 from .plan_store import create_plan_task, list_active_plans
 from .system_engine import ATTRIBUTE_KEYS, default_task_rewards, infer_attribute
 
@@ -98,7 +98,7 @@ def _llm_quest(plan: dict[str, Any], config: dict[str, Any]) -> dict[str, Any] |
         {"role": "system", "content": SYSTEM_QUEST_PROMPT},
         {"role": "user", "content": _plan_prompt(plan)},
     ]
-    response = generate_response(messages, with_glm_options(config, disable_thinking=True))
+    response = generate_response(messages, boost_max_tokens(config))
     if not response.get("ok"):
         return None
     return _parse_quest(str(response.get("answer") or ""), plan)
