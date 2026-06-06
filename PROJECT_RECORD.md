@@ -696,3 +696,23 @@ Recommended entry shape:
 - `backend/personal_agent/system_quest.py`: `_plan_history`, avoid-list, temperature.
 - `backend/personal_agent/model_gateway.py`: config-driven `timeout`.
 - `backend/static/system.js`: `proposedTitles` accumulation across 换一个.
+
+## 2026-06-06 - Memory Layer Blueprint (archived, not built)
+
+### Stage
+- Documentation only. Captured a memory-management design after the user raised that memory grows with usage and will need compaction.
+
+### Product / Direction
+- Reframed the concern: data-scale growth is not a near-term problem (tiny local data, bounded recent-window already in `_plan_history`); the real gap is memory *depth* — the System should remember the 宿主 over months. Compaction is the tool to keep that durable memory bounded.
+
+### Stage Changes
+- `SYSTEM_DESIGN.md` §12 "记忆层（Memory Layer）": layered model (L0 raw log / L1 working window / L2 distilled long-term / L3 retrieval), the cap+merge compaction trick (≤K items, periodic LLM merge → stays a fixed budget forever), reuse of the existing memory infra (`memories.jsonl`/`decisions.jsonl`/Context Builder), engineering constraints (off the hot path; L0 stays the source of truth; transparent + user-confirmable), and trigger timing.
+
+### Decisions
+- Do NOT build it now (no urgent problem; bounded window suffices; over-building violates the "narrow" principle). Build L2 when "the System should know months-of-me" becomes a felt gap. No vector DB (MVP non-goal); keyword/recency retrieval only.
+
+### Next
+- Unchanged: step 4 cosmetics shop; merge `system-edition` -> `master` + tag `v0.2.0`. Memory layer (L2) is a later milestone.
+
+### Detail Pointers
+- `SYSTEM_DESIGN.md` §12: the memory-layer blueprint.
