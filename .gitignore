@@ -11,6 +11,7 @@ backend/tests/_tmp*/
 
 # Runtime/demo data that changes during use
 data/*.jsonl
+data/system_state.yaml
 data/demo_reset_archive/
 
 # OS / editor
