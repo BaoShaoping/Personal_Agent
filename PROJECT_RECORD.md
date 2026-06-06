@@ -498,3 +498,38 @@ Recommended entry shape:
 - `backend/personal_agent/system_quest.py`: quest generation + accept.
 - `backend/personal_agent/model_gateway.py`: `_chat_completions_url` `/vN` fix + tested live path.
 - `backend/static/system.js`: `generateQuest` / `renderProposal` / `acceptQuest`.
+
+## 2026-05-30 - System Edition Step 6 + v0 Build Complete
+
+### Stage
+- System Edition **v0 build order complete** (steps 0-6) on the `system-edition` branch; step 4 (shop) intentionally deferred to a placeholder. Step 6 (系统-voice narration) done.
+- Overall: the「系统」(half-real, half-game) is end-to-end working locally — panel, real file-backed state, reward settlement, quest generation, and narration — with GLM as an opt-in live brain.
+
+### Product / Direction
+- Completion narration now speaks in the System's persona: live mode asks the LLM for a one-line 「叮！」 congratulation; mock/offline uses a deterministic template. The same line is persisted in the reward audit event, so the burst and the 系统记录 feed stay consistent.
+
+### Stage Changes
+- `system_voice.py`: `narrate_completion()` (LLM in live mode, `template_ding()` fallback).
+- `system_engine._apply_rewards` now builds the 「叮！」 text via `narrate_completion` instead of an inline template.
+
+### Verified
+- Full suite: `120 passed` (114 prior + 6 new `test_system_voice.py`): template format, level-up text, mock-uses-template, live-uses-LLM, live-fallback-on-failure, first-line-only.
+
+### Decisions
+- Narration is best-effort: any LLM failure silently falls back to the template, so completion never blocks on the model.
+- The persisted audit summary IS the narration (single source of truth for the 叮 feed).
+
+### Risks / Open Questions
+- Live mode adds one LLM call per completion (latency); only active when the user opts into GLM. Acceptable for a local single-user app.
+- Whole live path (quest + narration + /api/ask) is unverified against the real GLM endpoint until the user sets `PERSONAL_AGENT_API_KEY` and flips `mode: live`.
+
+### Next (post-v0)
+- Live GLM verification once the key is set (flip `data/settings.yaml` `mode: live` or use a per-request override).
+- Step 4: the cosmetics shop (spend 魔法点 on forest decorations / panel themes) — currently a placeholder button.
+- Consider merging `system-edition` into `master` and tagging `v0.2.0` once live GLM is confirmed.
+- Possible polish: a system-state reset helper (mirroring `demo_seed_reset`) so demos start clean.
+
+### Detail Pointers
+- `backend/personal_agent/system_voice.py`: narration + template.
+- `backend/personal_agent/system_engine.py`: `_apply_rewards` uses `narrate_completion`.
+- `SYSTEM_DESIGN.md`: the v0 blueprint these steps implemented.

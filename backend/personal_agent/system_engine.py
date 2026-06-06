@@ -23,6 +23,7 @@ from typing import Any
 from .audit_log import append_audit_event, read_audit_events
 from .memory_store import read_yaml_file
 from .plan_store import list_active_plans, list_today_tasks, load_plan_data, update_task_status
+from .system_voice import narrate_completion
 
 
 SYSTEM_STATE_FILE = "system_state.yaml"
@@ -275,11 +276,9 @@ def _apply_rewards(rewards: dict[str, Any], task: dict[str, Any], data_dir: Path
     leveled_up = after["level"] > before_level
     attribute_label = ATTRIBUTE_LABELS.get(attribute, "")
 
-    ding_text = f"叮！宿主完成「{task.get('title', '')}」，经验 +{exp}，✦ +{magic}"
-    if attribute_label:
-        ding_text += f"，{attribute_label} ↑"
-    if leveled_up:
-        ding_text += f"（升级！Lv.{after['level']}）"
+    ding_text = narrate_completion(
+        str(task.get("title", "")), rewards, leveled_up, after["level"], attribute_label, str(data_dir)
+    )
 
     deltas = {
         "exp": exp,
