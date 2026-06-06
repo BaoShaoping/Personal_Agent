@@ -20,7 +20,9 @@ def test_model_config_api_returns_200_and_redacts_api_key(monkeypatch):
 
 
 def test_model_test_api_returns_200():
-    response = request("POST", "/api/model/test", json={"user_message": "测试模型网关"})
+    # Force mock so the test stays offline/deterministic regardless of the
+    # committed settings.yaml mode.
+    response = request("POST", "/api/model/test", json={"user_message": "测试模型网关", "model_override": {"mode": "mock"}})
 
     assert response.status_code == 200
     data = response.get_json()
@@ -32,7 +34,7 @@ def test_ask_api_returns_answer_and_context_pack():
     response = request(
         "POST",
         "/api/ask",
-        json={"user_message": "我今天应该做什么？", "max_chars": 6000, "max_memories": 8},
+        json={"user_message": "我今天应该做什么？", "max_chars": 6000, "max_memories": 8, "model_override": {"mode": "mock"}},
     )
 
     assert response.status_code == 200

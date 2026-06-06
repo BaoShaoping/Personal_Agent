@@ -26,7 +26,7 @@ def test_suggest_api_can_include_ask_result():
     response = request(
         "POST",
         "/api/suggest",
-        json={"user_message": "这个项目现在下一步是什么？", "include_ask": True},
+        json={"user_message": "这个项目现在下一步是什么？", "include_ask": True, "model_override": {"mode": "mock"}},
     )
 
     assert response.status_code == 200

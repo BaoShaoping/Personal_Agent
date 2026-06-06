@@ -308,6 +308,7 @@ def _build_suggestion_payload(payload: dict[str, Any]) -> tuple[int, dict[str, A
         return 400, {"ok": False, "error": {"message": "max_chars and max_memories must be numbers"}}
 
     include_ask = bool(payload.get("include_ask", True))
+    model_override = payload.get("model_override") if isinstance(payload.get("model_override"), dict) else None
     context_pack = build_context_pack(
         user_message=user_message,
         data_dir=str(DATA_DIR),
@@ -322,6 +323,7 @@ def _build_suggestion_payload(payload: dict[str, Any]) -> tuple[int, dict[str, A
             data_dir=DATA_DIR,
             max_chars=max_chars,
             max_memories=max_memories,
+            model_override=model_override,
         )
     suggestion = suggest_next_action(
         user_message=user_message,

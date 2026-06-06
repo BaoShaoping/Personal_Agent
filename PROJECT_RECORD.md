@@ -567,3 +567,34 @@ Recommended entry shape:
 - `backend/personal_agent/model_gateway.py`: `with_glm_options`, `extra_body` passthrough.
 - `backend/personal_agent/system_quest.py`: `_extract_json_object`, thinking-disabled quest gen.
 - `backend/personal_agent/system_voice.py`: thinking-disabled narration.
+
+## 2026-05-30 - Default Model Mode Switched to Live (tests decoupled)
+
+### Stage
+- Per the user's request, `data/settings.yaml` is now committed as `mode: live` — the app uses real GLM by default.
+
+### Product / Direction
+- The committed product now defaults to the real GLM brain (the user keeps `PERSONAL_AGENT_API_KEY` set). Mock remains available per-request via `model_override`.
+
+### Stage Changes
+- `data/settings.yaml`: `mode: mock` -> `mode: live`.
+- `api.py`: `/api/suggest` (and `/api/suggest/with-permission`) now thread `model_override` into the `ask()` call, matching `/api/ask`.
+- Tests decoupled from the committed mode: `test_ask_api` (model/test, ask) and `test_suggestion_api` (include_ask) now pass `model_override: {mode: mock}` so they stay offline/deterministic. Suite back to ~2.6s.
+
+### Verified
+- Full suite: `123 passed in ~2.6s` with `mode: live` committed and no network calls (the model-invoking tests force mock).
+- Found and fixed every network-dependent test via `pytest --durations` (test_ask_api x2, test_suggestion_api x1).
+
+### Decisions
+- Committed default is now live; tests force mock explicitly rather than relying on a mock default.
+- System features degrade gracefully without a key (quest -> rule fallback, narration -> template). `/api/ask` returns a clear error without a key (no silent mock fallback) — acceptable since the user keeps the key set.
+
+### Risks / Open Questions
+- Live default means anyone running the app WITHOUT `PERSONAL_AGENT_API_KEY` gets an error on `/api/ask` (System quest/narration still degrade gracefully). If broad no-key usability is later wanted, add an auto-mock-fallback or a startup mode check.
+
+### Next
+- Step 4 cosmetics shop; merge `system-edition` -> `master` + tag `v0.2.0`.
+
+### Detail Pointers
+- `data/settings.yaml`: `mode: live`.
+- `backend/personal_agent/api.py`: `_build_suggestion_payload` model_override passthrough.
