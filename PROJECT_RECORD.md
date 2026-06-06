@@ -747,6 +747,37 @@ Recommended entry shape:
 - `HOSTED_BETA_DESIGN.md`: the hosted-beta architecture blueprint.
 - tag `v0.2.0`: local single-user baseline before the hosted chapter.
 
+## 2026-06-06 - Hosted Beta Phase 1: browser-side data (localStorage)
+
+### Stage
+- Phase 1 of `HOSTED_BETA_DESIGN.md` done: the panel is now fully client-side, with `localStorage` as the single source of truth. No server needed for data.
+
+### Product / Direction
+- A tester can use the System entirely in their browser; progress persists across refresh and never leaves the device. This is the foundation the thin GLM proxy (Phase 2) will sit on.
+
+### Stage Changes
+- `backend/static/system.js` rewritten to be localStorage-backed: `loadState`/`saveState`/`mergeSeed` + a fresh `SEED` (level 1, two starter plans 成为更好的自己/保持健康, welcome ding). All logic is client-side now: completion settlement (exp/magic/attribute/forest + 「叮！」 template), rule-based quest generation with avoid/变体, accept-to-today-tasks, and the cosmetics shop (avatar unlock/equip with 魔法点) — all reading/writing localStorage. No fetch to the Python backend.
+- The Python `/api/system/*` endpoints are unchanged and still tested, but the panel no longer uses them (they become the local-dev/tested logic; the hosted panel is client-side). Quests/narration are rule/template in Phase 1; GLM returns via the proxy in Phase 2.
+- Mock badge hidden in Phase 1 (returns with GLM in Phase 2).
+
+### Verified
+- Full suite: `131 passed` (Python untouched). Static files serve.
+- JS not run by me (no node/browser) — user to hard-refresh `/system` and confirm; report any console error.
+
+### Decisions
+- Fresh SEED (level 1) per browser — correct for a beta where each tester starts their own journey; progress is local + anonymous (not tied to email).
+- Phase 1 requires no host at all (pure client-side), as designed.
+
+### Risks / Open Questions
+- Plan creation/editing UI does not exist yet — testers get two generic starter plans; their own goals/plan editing is a later need.
+- Clearing browser storage / switching device loses progress (acceptable for beta; flagged in blueprint).
+
+### Next
+- Phase 2: thin stateless GLM proxy (`/api/glm`: holds key, ≤3-concurrency queue, glm-4.5-air via env) wired into quest generation + narration; then Phase 3 (email gate + feedback + deploy → closed beta).
+
+### Detail Pointers
+- `backend/static/system.js`: localStorage source of truth + all client-side logic.
+
 ## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
 
 ### Stage
