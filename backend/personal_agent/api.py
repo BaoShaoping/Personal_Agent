@@ -220,8 +220,9 @@ def system_task_complete_response(payload: dict[str, Any] | None) -> tuple[int, 
 def system_quest_generate_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
     payload = payload or {}
     plan_id = payload.get("plan_id")
+    avoid = [str(t) for t in payload.get("avoid")] if isinstance(payload.get("avoid"), list) else None
     try:
-        result = generate_quest(DATA_DIR, plan_id=str(plan_id) if plan_id else None)
+        result = generate_quest(DATA_DIR, plan_id=str(plan_id) if plan_id else None, avoid_titles=avoid)
     except Exception as exc:
         return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
     return (200 if result.get("ok") else 400), result

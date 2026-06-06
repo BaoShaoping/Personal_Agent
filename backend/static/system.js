@@ -62,6 +62,8 @@
   };
 
   let pendingTreePop = false; // flag so the newest tree animates after a completion
+  let proposedTitles = []; // titles rejected via "换一个" this round, fed back as avoid-list
+  let currentProposal = null;
 
   // ----------------- derived helpers (mirror future backend) -----------------
   function levelThreshold(level) { return 100 + (level - 1) * 50; }
@@ -372,10 +374,11 @@
     btn.disabled = true;
     btn.textContent = "系统生成中…";
     try {
+      const avoid = proposedTitles.concat((state.today_tasks || []).map((t) => t.title).filter(Boolean));
       const res = await fetch("/api/system/quest/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: "{}",
+        body: JSON.stringify({ avoid: avoid }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error((data.error && data.error.message) || "生成失败");
@@ -388,7 +391,16 @@
     }
   }
 
+  function clearProposal() {
+    const box = $("quest-proposal");
+    box.hidden = true;
+    box.innerHTML = "";
+    proposedTitles = [];
+    currentProposal = null;
+  }
+
   function renderProposal(quest, source) {
+    currentProposal = quest;
     const box = $("quest-proposal");
     const srcLabel = source === "llm" ? "系统（GLM）生成" : "系统生成";
     box.innerHTML =
@@ -403,8 +415,11 @@
       '<div class="qp-source">来源：' + srcLabel + "</div>";
     box.hidden = false;
     $("qp-accept").addEventListener("click", () => acceptQuest(quest));
-    $("qp-regen").addEventListener("click", generateQuest);
-    $("qp-cancel").addEventListener("click", () => { box.hidden = true; box.innerHTML = ""; });
+    $("qp-regen").addEventListener("click", () => {
+      if (currentProposal && currentProposal.title) proposedTitles.push(currentProposal.title);
+      generateQuest();
+    });
+    $("qp-cancel").addEventListener("click", clearProposal);
   }
 
   async function acceptQuest(quest) {
@@ -416,9 +431,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error((data.error && data.error.message) || "接受失败");
-      const box = $("quest-proposal");
-      box.hidden = true;
-      box.innerHTML = "";
+      clearProposal();
       await loadSummary();
       showToast("叮！任务已加入今日清单");
     } catch (err) {
@@ -429,7 +442,7 @@
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
     $("shop-btn").addEventListener("click", () => showToast("商城正在施工中，敬请期待 ✦（v0 仅占位）"));
-    $("quest-gen-btn").addEventListener("click", generateQuest);
+    $("quest-gen-btn").addEventListener("click", () => { proposedTitles = []; generateQuest(); });
     loadSummary();
   });
 })();

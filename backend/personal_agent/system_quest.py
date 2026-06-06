@@ -5,6 +5,10 @@ Step 5 of the build. In live mode the System acts as a game master and the LLM
 cannot be parsed, it falls back to a deterministic rule-based quest. Generated
 quests are *proposals* — accepting one creates the task (audited), keeping the
 "系统 proposes, 宿主 decides" safety rail.
+
+The prompt carries lightweight memory (the plan's recent tasks and progress) and
+an avoid-list so quests stay personalized and "换一个" actually returns something
+different rather than repeating.
 """
 
 from __future__ import annotations
@@ -15,16 +19,16 @@ from typing import Any
 
 from .audit_log import append_audit_event
 from .model_gateway import boost_max_tokens, generate_response, load_model_config, model_info
-from .plan_store import create_plan_task, list_active_plans
+from .plan_store import create_plan_task, list_active_plans, load_plan_data
 from .system_engine import ATTRIBUTE_KEYS, default_task_rewards, infer_attribute
 
 
 SYSTEM_QUEST_PROMPT = """你是绑定在宿主身上的专属「系统」——像网络小说里的那种「系统」：温暖、鼓励、带一点游戏仪式感，称用户为「宿主」。
-你根据宿主真实的长期计划，提出 ONE 个今天就能完成的最小任务（quest）。
+你根据宿主真实的长期计划、最近进展和已有任务，提出 ONE 个今天就能完成的最小任务（quest）。
 
 硬性要求：
 - **必须用简体中文**输出 title 和 system_voice（无论计划本身是什么语言，都要翻成中文表达）。
-- 任务要小、具体、今天能完成（约 15-30 分钟）。
+- 任务要小、具体、今天能完成（约 15-30 分钟），并且**要新颖**，不要重复宿主已有/已做过的任务。
 - 只输出一个 JSON 对象，不要任何额外文字、解释或多余内容。
 - JSON 字段：
   - title: 字符串，简体中文任务标题
@@ -36,23 +40,41 @@ SYSTEM_QUEST_PROMPT = """你是绑定在宿主身上的专属「系统」——�
 
 语气温暖、鼓励、有「系统」仪式感。绝不惩罚或施压。"""
 
+_RULE_QUEST_TEMPLATES = [
+    "推进「{title}」：完成一个 25 分钟专注块",
+    "为「{title}」做一件最小但具体的小事",
+    "围绕「{title}」复盘 5 分钟，并记下一条心得",
+    "在「{title}」上前进一小步，哪怕只用 15 分钟",
+    "为「{title}」整理一个清晰的下一步",
+]
 
-def generate_quest(data_dir: str = "data", plan_id: str | None = None) -> dict[str, Any]:
-    """Propose one daily quest for an active plan (LLM in live mode, else rule-based)."""
+
+def generate_quest(
+    data_dir: str = "data",
+    plan_id: str | None = None,
+    avoid_titles: list[str] | None = None,
+) -> dict[str, Any]:
+    """Propose one daily quest for an active plan (LLM in live mode, else rule-based).
+
+    ``avoid_titles`` (e.g. from "换一个") plus the plan's recent task titles are fed
+    to the model so the quest is new and personalized.
+    """
 
     plans = list_active_plans(data_dir)
     if not plans:
         return {"ok": False, "error": {"message": "没有激活中的长期计划。"}}
 
     plan = _pick_plan(plans, plan_id)
+    history = _plan_history(str(plan.get("id") or ""), data_dir)
+    avoid = list(dict.fromkeys([t for t in [*(avoid_titles or []), *history["titles"]] if t]))
     config = load_model_config(data_dir)
 
     if config.get("mode") == "live":
-        quest = _llm_quest(plan, config)
+        quest = _llm_quest(plan, config, avoid, history["progress"])
         if quest:
             return {"ok": True, "source": "llm", "quest": quest, "target_plan": _plan_brief(plan), "model_info": model_info(config)}
 
-    return {"ok": True, "source": "mock", "quest": _rule_quest(plan), "target_plan": _plan_brief(plan), "model_info": model_info(config)}
+    return {"ok": True, "source": "mock", "quest": _rule_quest(plan, avoid), "target_plan": _plan_brief(plan), "model_info": model_info(config)}
 
 
 def accept_quest(quest: dict[str, Any], data_dir: str = "data") -> dict[str, Any]:
@@ -94,12 +116,29 @@ def accept_quest(quest: dict[str, Any], data_dir: str = "data") -> dict[str, Any
 # --------------------------------------------------------------------------- #
 # Internals
 # --------------------------------------------------------------------------- #
-def _llm_quest(plan: dict[str, Any], config: dict[str, Any]) -> dict[str, Any] | None:
+def _plan_history(plan_id: str, data_dir: str, title_limit: int = 10, progress_limit: int = 5) -> dict[str, list[str]]:
+    """Recent task titles (for avoid/dedup) and progress notes (for context)."""
+
+    if not plan_id:
+        return {"titles": [], "progress": []}
+    data = load_plan_data(data_dir)
+    titles = [str(t.get("title")) for t in data.tasks if str(t.get("plan_id")) == plan_id and t.get("title")]
+    progress = [str(p.get("summary")) for p in data.progress if str(p.get("plan_id")) == plan_id and p.get("summary")]
+    return {
+        "titles": list(dict.fromkeys(titles))[-title_limit:],
+        "progress": progress[-progress_limit:],
+    }
+
+
+def _llm_quest(plan: dict[str, Any], config: dict[str, Any], avoid: list[str], progress: list[str]) -> dict[str, Any] | None:
     messages = [
         {"role": "system", "content": SYSTEM_QUEST_PROMPT},
-        {"role": "user", "content": _plan_prompt(plan)},
+        {"role": "user", "content": _plan_prompt(plan, avoid, progress)},
     ]
-    response = generate_response(messages, boost_max_tokens(config))
+    # Reasoning enabled, generous token budget, and a higher temperature so
+    # repeated requests ("换一个") actually vary.
+    quest_config = {**boost_max_tokens(config), "temperature": 0.9}
+    response = generate_response(messages, quest_config)
     if not response.get("ok"):
         return None
     return _parse_quest(str(response.get("answer") or ""), plan)
@@ -136,8 +175,11 @@ def _parse_quest(answer: str, plan: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _rule_quest(plan: dict[str, Any]) -> dict[str, Any]:
-    title = f"推进「{plan.get('title', '计划')}」：完成一个 25 分钟专注块"
+def _rule_quest(plan: dict[str, Any], avoid: list[str] | None = None) -> dict[str, Any]:
+    base = str(plan.get("title") or "计划")
+    avoid_set = {a for a in (avoid or []) if a}
+    options = [template.format(title=base) for template in _RULE_QUEST_TEMPLATES]
+    title = next((option for option in options if option not in avoid_set), options[0])
     rewards = default_task_rewards({"title": title, "plan_id": plan.get("id")})
     return {"plan_id": str(plan.get("id") or ""), "title": title, "rewards": rewards, "system_voice": _voice(title)}
 
@@ -162,7 +204,7 @@ def _plan_brief(plan: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _plan_prompt(plan: dict[str, Any]) -> str:
+def _plan_prompt(plan: dict[str, Any], avoid: list[str] | None = None, progress: list[str] | None = None) -> str:
     lines = [
         f"长期计划：{plan.get('title', '')}",
         f"目标：{plan.get('goal', '')}",
@@ -170,7 +212,21 @@ def _plan_prompt(plan: dict[str, Any]) -> str:
     if plan.get("current_stage"):
         lines.append(f"当前阶段：{plan.get('current_stage')}")
     lines.append(f"进度：{plan.get('progress_percent', 0)}%")
-    lines.append("请为这个计划提出今天的一个最小任务（quest），按要求只返回 JSON。")
+
+    progress = [p for p in (progress or []) if p]
+    if progress:
+        lines.append("")
+        lines.append("宿主最近的进展：")
+        lines.extend(f"- {item}" for item in progress[-5:])
+
+    avoid = [a for a in (avoid or []) if a]
+    if avoid:
+        lines.append("")
+        lines.append("宿主最近已经有过下面这些任务，请【不要重复】，换一个不同角度的新任务：")
+        lines.extend(f"- {title}" for title in avoid[:12])
+
+    lines.append("")
+    lines.append("请提出今天的一个最小任务（quest），要新颖、与上面已有任务不同，按要求只返回 JSON。")
     return "\n".join(lines)
 
 

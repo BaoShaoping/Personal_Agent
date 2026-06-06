@@ -664,3 +664,35 @@ Recommended entry shape:
 ### Detail Pointers
 - `backend/personal_agent/system_quest.py` / `system_voice.py`: Chinese + persona prompts.
 - `backend/static/system.js`: `attrLevelInfo` + rainbow radar/legend.
+
+## 2026-06-06 - Quest Memory + Variety, GLM-4.6, Longer Timeout
+
+### Stage
+- User feedback: quests repeated ("换一个" gave the same task) and model switched to GLM-4.6.
+
+### Product / Direction
+- The 系统 now has lightweight memory and produces fresh, personalized quests; "换一个" actually changes. Model is GLM-4.6.
+
+### Stage Changes
+- `system_quest`: the prompt now carries memory — the plan's recent task titles (avoid/dedup) and recent progress notes — plus an explicit avoid-list. `generate_quest(..., avoid_titles)` and quest temperature 0.9 so repeated requests vary. `/api/system/quest/generate` accepts `avoid`. Panel accumulates rejected titles across "换一个" and feeds them back; resets on a fresh generate / accept / cancel. Rule fallback also rotates through a small template pool.
+- `data/settings.yaml`: `model_name` glm-4.5-air -> **glm-4.6**.
+- `model_gateway`: request timeout is now config-driven (`timeout`, default **120s**) — GLM-4.6 reasoning can take 30-60s+, and the old 60s cap caused timeouts that fell back to the mock/rule quest.
+
+### Verified
+- Full suite: `126 passed` (new test asserts avoid + recent-history appear in the quest prompt).
+- Live (real GLM-4.6): two consecutive generates returned different Chinese quests (avoid works); a single generate succeeded in ~32s (`source: llm`) — e.g. "改写一句 AI 文档中的长难句，将其拆解为两句简单短句".
+
+### Decisions
+- Memory is lightweight (recent task titles + progress notes per plan), not a full context pack; enough to stop repetition and personalize.
+- Quest temperature 0.9 for variety; reasoning stays ON; timeout raised to 120s instead of disabling reasoning.
+
+### Risks / Open Questions
+- GLM-4.6 + full reasoning is slow (~30-60s+ per quest); acceptable per the user's "GLM 就是系统，不用省" stance, but the panel could show a richer loading state if it feels long.
+
+### Next
+- Step 4 cosmetics shop; merge `system-edition` -> `master` + tag `v0.2.0`.
+
+### Detail Pointers
+- `backend/personal_agent/system_quest.py`: `_plan_history`, avoid-list, temperature.
+- `backend/personal_agent/model_gateway.py`: config-driven `timeout`.
+- `backend/static/system.js`: `proposedTitles` accumulation across 换一个.

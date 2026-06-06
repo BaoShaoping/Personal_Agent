@@ -102,6 +102,32 @@ def test_generate_quest_parses_code_fenced_json(tmp_path, monkeypatch):
     assert result["quest"]["title"] == "读一篇短文"
 
 
+def test_generate_quest_prompt_includes_avoid_and_history(tmp_path, monkeypatch):
+    _write_plans(tmp_path)
+    _write_live_settings(tmp_path)
+    (tmp_path / "plan_tasks.jsonl").write_text(
+        json.dumps({"id": "t1", "plan_id": "plan_eng", "date": "2026-05-01", "title": "旧任务A", "status": "done"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "plan_progress.jsonl").write_text(
+        json.dumps({"id": "p1", "plan_id": "plan_eng", "summary": "昨天背了10个单词", "created_at": "2026-05-01T00:00:00"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def fake(messages, config):
+        captured["messages"] = messages
+        return {"ok": True, "answer": json.dumps({"title": "新任务", "attribute": "intellect", "exp": 10, "magic_points": 5, "attribute_exp": 15, "system_voice": "叮"}, ensure_ascii=False)}
+
+    monkeypatch.setattr(system_quest, "generate_response", fake)
+    generate_quest(str(tmp_path), avoid_titles=["不要这个"])
+
+    user_msg = captured["messages"][-1]["content"]
+    assert "不要这个" in user_msg        # explicit avoid (换一个)
+    assert "旧任务A" in user_msg          # recent task title (memory)
+    assert "昨天背了10个单词" in user_msg  # recent progress (memory)
+
+
 def test_accept_quest_creates_task(tmp_path):
     _write_plans(tmp_path)
     quest = {

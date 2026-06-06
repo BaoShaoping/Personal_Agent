@@ -20,6 +20,8 @@ DEFAULT_MODEL_CONFIG = {
     "temperature": 0.4,
     "max_tokens": 1200,
     "mode": "mock",
+    # Reasoning models (e.g. GLM-4.6) can take well over a minute to respond.
+    "timeout": 120,
 }
 
 
@@ -205,7 +207,7 @@ def _live_openai_compatible_response(messages: list[dict[str, str]], config: dic
 
     try:
         req = request.Request(url, data=body, headers=headers, method="POST")
-        with request.urlopen(req, timeout=60) as response:
+        with request.urlopen(req, timeout=config.get("timeout", 120)) as response:
             raw = json.loads(response.read().decode("utf-8"))
     except error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")
@@ -274,6 +276,10 @@ def _normalize_model_config(model_config: dict[str, Any]) -> dict[str, Any]:
         config["max_tokens"] = int(config.get("max_tokens"))
     except (TypeError, ValueError):
         config["max_tokens"] = DEFAULT_MODEL_CONFIG["max_tokens"]
+    try:
+        config["timeout"] = int(config.get("timeout"))
+    except (TypeError, ValueError):
+        config["timeout"] = DEFAULT_MODEL_CONFIG["timeout"]
     return config
 
 
