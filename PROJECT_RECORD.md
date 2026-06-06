@@ -633,3 +633,34 @@ Recommended entry shape:
 - `backend/personal_agent/model_gateway.py`: `effective_mode`, `boost_max_tokens`, auto-fallback `generate_response`.
 - `backend/personal_agent/system_engine.py`: summary `model` field.
 - `backend/static/system.{html,css,js}`: `#mock-badge`.
+
+## 2026-06-06 - Chinese Output, Stronger 系统 Persona, 7-Level Rainbow Attributes
+
+### Stage
+- User feedback from live panel testing applied. Model in use: `glm-4.5-air`.
+
+### Product / Direction
+- The System speaks Chinese and feels more like a web-novel「系统」; attribute progress is now visible and gamified (7 rainbow tiers).
+
+### Stage Changes
+- Prompts (`system_quest`, `system_voice`): strengthened the 「系统」 persona (binds to 宿主, web-novel System tone) and **force simplified-Chinese output** regardless of the plan's language. Verified live: an English plan now yields a Chinese quest title + 系统-voice + narration.
+- Attribute panel (`system.js` / `system.css`): replaced the imperceptible `floor(sqrt(exp))` value with a **7-level rainbow system** (赤橙黄绿青蓝紫). Each attribute shows a coloured `Lv.N` badge and a progress bar that fills on every completion; the radar now uses a fixed 1-7 scale with rainbow-coloured vertices, so completing a task is visibly reflected. (Root cause of "属性面板没变化": sqrt growth is invisible at high exp.)
+- Tests hardened: both `_copy_data` helpers (test_app_smoke, test_e2e_debug_flow) now drop runtime today-dated tasks so local panel usage cannot pollute the suite.
+
+### Verified
+- Full suite: `125 passed in ~2.9s`, no network (fixed two failures caused by real `plan_tasks.jsonl` accumulating today tasks from live panel use).
+- Live (real GLM): quest "学习5个AI技术英语单词并造句", voice "叮！宿主，每掌握一个新词汇…", narration "叮！恭喜宿主单词任务完成，升级成功！".
+
+### Decisions
+- Attribute level = `min(7, floor(exp/300)+1)`; radar uses continuous `1 + exp/300` (capped 7) so progress is always visible.
+- Force Chinese in the System prompts (the plan's language no longer leaks into output).
+
+### Risks / Open Questions
+- `data/system_state.yaml` is committed as a seed but mutates with panel use (the user's local copy is ahead of the committed seed); runtime mutations are intentionally not committed. Consider gitignoring it + a seed template if the git noise becomes annoying.
+
+### Next
+- Step 4 cosmetics shop; merge `system-edition` -> `master` + tag `v0.2.0`.
+
+### Detail Pointers
+- `backend/personal_agent/system_quest.py` / `system_voice.py`: Chinese + persona prompts.
+- `backend/static/system.js`: `attrLevelInfo` + rainbow radar/legend.

@@ -79,6 +79,20 @@
 
   function attrValue(exp) { return Math.floor(Math.sqrt(Math.max(0, exp))); }
 
+  // Seven attribute levels, each a rainbow colour (赤橙黄绿青蓝紫). Level is
+  // derived from attribute exp so every task completion visibly fills the bar,
+  // and crossing a tier changes the colour.
+  const RAINBOW = ["#ff5a5a", "#ff9f43", "#ffd93d", "#4ade80", "#34c8ff", "#5b8cff", "#c264ff"];
+  const ATTR_EXP_PER_LEVEL = 300;
+  function attrLevelInfo(exp) {
+    exp = Math.max(0, exp || 0);
+    const raw = exp / ATTR_EXP_PER_LEVEL;
+    const level = Math.min(7, Math.floor(raw) + 1);
+    const radar = Math.min(7, 1 + raw); // 1..7 continuous, drives the radar shape
+    const within = level >= 7 ? 1 : (exp - (level - 1) * ATTR_EXP_PER_LEVEL) / ATTR_EXP_PER_LEVEL;
+    return { level: level, radar: radar, progress: Math.round(within * 100), color: RAINBOW[level - 1] };
+  }
+
   function forestStage(growth) {
     if (growth <= 0) return "种子";
     if (growth < 4) return "萌芽";
@@ -103,43 +117,41 @@
   }
 
   function renderRadar() {
-    const values = ATTRS.map((a) => ({ label: a.label, value: attrValue(state.attributes[a.key].exp) }));
-    const maxVal = Math.max(1, ...values.map((v) => v.value));
+    const infos = ATTRS.map((a) => Object.assign({ label: a.label }, attrLevelInfo(state.attributes[a.key].exp)));
+    const MAX = 7;
     const cx = 100, cy = 100, R = 70;
-    const n = values.length;
+    const n = infos.length;
     const ang = (i) => ((-90 + (i * 360) / n) * Math.PI) / 180;
     const pt = (i, r) => [(cx + Math.cos(ang(i)) * r).toFixed(1), (cy + Math.sin(ang(i)) * r).toFixed(1)];
 
     let svg = "";
     [0.25, 0.5, 0.75, 1].forEach((ring) => {
-      const pts = values.map((_, i) => pt(i, R * ring).join(",")).join(" ");
+      const pts = infos.map((_, i) => pt(i, R * ring).join(",")).join(" ");
       svg += '<polygon class="radar-grid-line" points="' + pts + '" />';
     });
-    values.forEach((_, i) => {
+    infos.forEach((_, i) => {
       const [x, y] = pt(i, R);
       svg += '<line class="radar-axis" x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '" />';
     });
-    const areaPts = values.map((v, i) => pt(i, R * (v.value / maxVal)).join(",")).join(" ");
+    const areaPts = infos.map((v, i) => pt(i, R * (v.radar / MAX)).join(",")).join(" ");
     svg += '<polygon class="radar-area" points="' + areaPts + '" />';
-    values.forEach((v, i) => {
-      const [x, y] = pt(i, R * (v.value / maxVal));
-      svg += '<circle class="radar-dot" r="2.6" cx="' + x + '" cy="' + y + '" />';
+    infos.forEach((v, i) => {
+      const [x, y] = pt(i, R * (v.radar / MAX));
+      svg += '<circle r="3" cx="' + x + '" cy="' + y + '" fill="' + v.color + '" stroke="#0b1220" stroke-width="1" />';
     });
-    values.forEach((v, i) => {
+    infos.forEach((v, i) => {
       const [x, y] = pt(i, R + 16);
       svg += '<text class="radar-label" x="' + x + '" y="' + y + '" text-anchor="middle" dominant-baseline="middle">' + v.label + "</text>";
     });
     $("radar-svg").innerHTML = svg;
 
-    const legend = values
-      .map((v) => {
-        const w = Math.round((v.value / maxVal) * 100);
-        return (
-          '<div class="attr-row"><span class="attr-name">' + v.label + "</span>" +
-          '<span class="attr-track"><span class="attr-fill" style="width:' + w + '%"></span></span>' +
-          '<span class="attr-val">' + v.value + "</span></div>"
-        );
-      })
+    const legend = infos
+      .map((v) =>
+        '<div class="attr-row"><span class="attr-name">' + v.label + "</span>" +
+        '<span class="attr-track"><span class="attr-fill" style="width:' + v.progress + "%;background:" + v.color +
+        ";box-shadow:0 0 8px " + v.color + '"></span></span>' +
+        '<span class="attr-lv" style="color:' + v.color + ";border-color:" + v.color + '">Lv.' + v.level + "</span></div>"
+      )
       .join("");
     $("attr-legend").innerHTML = legend;
   }

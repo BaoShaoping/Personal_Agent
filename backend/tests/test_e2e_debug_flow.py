@@ -25,6 +25,8 @@ def _copy_data(name):
     audit_file = data_dir / "audit_log.jsonl"
     if audit_file.exists():
         audit_file.unlink()
+    # Hermetic: drop runtime today-dated tasks so local panel usage cannot pollute tests.
+    _remove_today_tasks(data_dir)
     return data_dir
 
 

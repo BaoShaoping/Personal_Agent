@@ -25,6 +25,13 @@ def _copy_data(name):
     audit_file = data_dir / "audit_log.jsonl"
     if audit_file.exists():
         audit_file.unlink()
+    # Hermetic: drop runtime today-dated tasks so local panel usage cannot pollute the smoke test.
+    tasks_file = data_dir / "plan_tasks.jsonl"
+    if tasks_file.exists():
+        kept = [t for t in read_jsonl_file(tasks_file) if t.get("date") != date.today().isoformat()]
+        with tasks_file.open("w", encoding="utf-8") as handle:
+            for t in kept:
+                handle.write(json.dumps(t, ensure_ascii=False, separators=(",", ":")) + "\n")
     return data_dir
 
 
