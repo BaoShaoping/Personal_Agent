@@ -20,9 +20,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .audit_log import read_audit_events
+from .audit_log import append_audit_event, read_audit_events
 from .memory_store import read_yaml_file
-from .plan_store import list_active_plans, list_today_tasks
+from .plan_store import list_active_plans, list_today_tasks, load_plan_data, update_task_status
 
 
 SYSTEM_STATE_FILE = "system_state.yaml"
@@ -224,6 +224,114 @@ def _recent_dings(data_dir: str | Path, limit: int = 8) -> list[dict[str, Any]]:
     for event in events:
         dings.append({"at": _short_time(event.get("created_at", "")), "text": str(event.get("summary") or "")})
     return dings
+
+
+# --------------------------------------------------------------------------- #
+# Reward settlement (step 3) — completing a task grants exp/magic/attr/growth
+# --------------------------------------------------------------------------- #
+def complete_and_settle_task(task_id: str, data_dir: str | Path = "data") -> dict[str, Any]:
+    """Mark a plan task done and settle its rewards into system state.
+
+    Idempotent: a task already ``done`` is not settled again. All writes are
+    persisted (atomic state write + audit event), so the loop is real and
+    traceable rather than a client-side illusion.
+    """
+
+    root = Path(data_dir)
+    task_id = str(task_id or "").strip()
+    if not task_id:
+        return {"ok": False, "error": {"message": "task_id is required"}}
+
+    task = next((t for t in load_plan_data(root).tasks if str(t.get("id")) == task_id), None)
+    if task is None:
+        return {"ok": False, "error": {"message": f"task not found: {task_id}"}}
+    if str(task.get("status")) == "done":
+        return {"ok": True, "already_done": True, "task": task}
+
+    update_result = update_task_status(task_id, "done", data_dir=root)
+    updated_task = update_result.get("task", task)
+    rewards = task.get("rewards") if isinstance(task.get("rewards"), dict) else default_task_rewards(task)
+    settlement = _apply_rewards(rewards, updated_task, root)
+    return {"ok": True, "already_done": False, "task": updated_task, "settlement": settlement}
+
+
+def _apply_rewards(rewards: dict[str, Any], task: dict[str, Any], data_dir: Path) -> dict[str, Any]:
+    state = load_system_state(data_dir)
+    before_level = level_info(state["total_exp"])["level"]
+
+    exp = _coerce_int(rewards.get("exp"), 0)
+    magic = _coerce_int(rewards.get("magic_points"), 0)
+    attribute = rewards.get("attribute")
+    attribute_exp = _coerce_int(rewards.get("attribute_exp"), 0)
+
+    state["total_exp"] += exp
+    state["magic_points"] += magic
+    if attribute in state["attributes"]:
+        state["attributes"][attribute]["exp"] += attribute_exp
+    state["forest"]["growth"] += 1
+    saved = save_system_state(state, data_dir)
+
+    after = level_info(saved["total_exp"])
+    leveled_up = after["level"] > before_level
+    attribute_label = ATTRIBUTE_LABELS.get(attribute, "")
+
+    ding_text = f"叮！宿主完成「{task.get('title', '')}」，经验 +{exp}，✦ +{magic}"
+    if attribute_label:
+        ding_text += f"，{attribute_label} ↑"
+    if leveled_up:
+        ding_text += f"（升级！Lv.{after['level']}）"
+
+    deltas = {
+        "exp": exp,
+        "magic_points": magic,
+        "attribute": attribute,
+        "attribute_exp": attribute_exp,
+        "forest_growth": 1,
+    }
+    _append_reward_audit(task, rewards, deltas, leveled_up, after["level"], ding_text, data_dir)
+
+    return {
+        "rewards": rewards,
+        "deltas": deltas,
+        "leveled_up": leveled_up,
+        "level": after["level"],
+        "total_exp": saved["total_exp"],
+        "magic_points": saved["magic_points"],
+        "forest_growth": saved["forest"]["growth"],
+        "ding_text": ding_text,
+    }
+
+
+def _append_reward_audit(
+    task: dict[str, Any],
+    rewards: dict[str, Any],
+    deltas: dict[str, Any],
+    leveled_up: bool,
+    level: int,
+    ding_text: str,
+    data_dir: Path,
+) -> None:
+    append_audit_event(
+        {
+            "event_type": "reward_granted",
+            "actor": "system",
+            "module": "system_engine",
+            "action_id": str(task.get("id") or ""),
+            "action_kind": "task_completed",
+            "target": str(task.get("id") or ""),
+            "status": "success",
+            "summary": ding_text,
+            "payload": {
+                "task": {"id": task.get("id"), "title": task.get("title"), "plan_id": task.get("plan_id")},
+                "rewards": rewards,
+                "deltas": deltas,
+                "leveled_up": leveled_up,
+                "level": level,
+            },
+            "source": "system_engine",
+        },
+        data_dir=data_dir,
+    )
 
 
 # --------------------------------------------------------------------------- #

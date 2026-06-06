@@ -22,6 +22,8 @@ EVENT_TYPES = {
     "memory_written",
     "plan_updated",
     "settings_updated",
+    "reward_granted",
+    "cosmetic_purchased",
 }
 
 EVENT_STATUSES = {"success", "failed", "canceled", "pending"}

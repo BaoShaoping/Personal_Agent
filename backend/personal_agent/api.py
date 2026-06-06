@@ -16,7 +16,7 @@ from .model_gateway import load_model_config, model_info
 from .permission_engine import evaluate_action, load_permission_mode
 from .plan_store import append_plan_progress, build_plan_context, plan_summary, update_task_status
 from .suggestion_engine import suggest_next_action
-from .system_engine import build_system_summary
+from .system_engine import build_system_summary, complete_and_settle_task
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -202,6 +202,18 @@ def plan_task_status_response(payload: dict[str, Any] | None) -> tuple[int, dict
         return 200, result
     except Exception as exc:
         return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
+
+
+def system_task_complete_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
+    payload = payload or {}
+    task_id = str(payload.get("task_id") or "").strip()
+    if not task_id:
+        return 400, {"ok": False, "error": {"message": "task_id is required"}}
+    try:
+        result = complete_and_settle_task(task_id, DATA_DIR)
+    except Exception as exc:
+        return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
+    return (200 if result.get("ok") else 400), result
 
 
 def plan_progress_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
@@ -472,6 +484,13 @@ def system_page() -> Response:
 @app.get("/api/system/summary")
 def api_system_summary() -> Response:
     return jsonify(build_system_summary(DATA_DIR))
+
+
+@app.post("/api/system/tasks/complete")
+def api_system_task_complete() -> tuple[Response, int]:
+    payload = request.get_json(silent=True)
+    status_code, body = system_task_complete_response(payload if isinstance(payload, dict) else {})
+    return jsonify(body), status_code
 
 
 @app.post("/api/context/build")

@@ -429,3 +429,36 @@ Recommended entry shape:
 - `backend/static/system.js`: `loadSummary()` / `applySummary()` with stub fallback.
 - `data/system_state.yaml`: seed system state.
 - `backend/tests/test_system_engine.py`: data-layer coverage.
+
+## 2026-05-30 - System Edition Step 3 (Reward Settlement)
+
+### Stage
+- System Edition build, `system-edition` branch. Step 3 (reward settlement) done. Next: step 5 (GLM); step 6 (narration). Step 4 shop deferred (placeholder).
+
+### Product / Direction
+- The 「叮！」 loop is now real and persisted: completing a task grants exp / magic points / attribute exp / forest growth, writes an audit event, and the panel reflects it from server state — not a client-side illusion.
+
+### Stage Changes
+- `system_engine.complete_and_settle_task()` + `_apply_rewards()` + `_append_reward_audit()`: idempotent settlement (a task already `done` is not re-settled), atomic state write, level-up detection, and a `reward_granted` audit event whose summary is the 「叮！」 line surfaced by `recent_dings`.
+- `audit_log.EVENT_TYPES` extended with `reward_granted` and `cosmetic_purchased`.
+- `api.py`: `POST /api/system/tasks/complete`.
+- `system.js`: the 完成 button now POSTs to the real endpoint, refreshes from persisted server state, and shows the server's 叮 text / level-up; falls back to optimistic client-side settlement only if the request fails.
+
+### Verified
+- Full suite: `105 passed` (100 prior + 5 new): settlement grants, idempotency, level-up detection, unknown-task error, and endpoint validation.
+- `app` imports cleanly with the new routes; real `data/system_state.yaml` left untouched (tests use tmp dirs).
+
+### Decisions
+- Settlement is idempotent and audit-backed; the 叮 feed is derived from `reward_granted` events (single source of truth).
+- The panel completes via the real endpoint, keeping client-side settlement only as an offline/dev fallback.
+
+### Risks / Open Questions
+- `data/system_state.yaml` mutates at runtime when tasks are completed in the browser; the committed copy is the seed/demo starting point (reset with `git checkout data/system_state.yaml`). Revisit a dedicated reset helper if needed.
+
+### Next
+- Step 5: GLM integration (live mode + `_chat_completions_url` `/v4` fix + 系统 persona prompt + structured quest generation), mock fallback kept; live verification needs the user's GLM key in `PERSONAL_AGENT_API_KEY`.
+
+### Detail Pointers
+- `backend/personal_agent/system_engine.py`: `complete_and_settle_task`, `_apply_rewards`.
+- `backend/personal_agent/api.py`: `POST /api/system/tasks/complete`.
+- `backend/static/system.js`: `completeTask` (API) + `settleLocally` (fallback).

@@ -234,7 +234,36 @@
     return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
   }
 
-  function completeTask(taskId) {
+  async function completeTask(taskId) {
+    const task = state.today_tasks.find((t) => t.id === taskId);
+    if (!task || task.status === "done") return;
+    try {
+      const res = await fetch("/api/system/tasks/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: taskId }),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!data.ok) throw new Error((data.error && data.error.message) || "settle failed");
+      const s = data.settlement || {};
+      pendingTreePop = true;
+      await loadSummary(); // re-render from persisted server state
+      const big = s.leveled_up ? "升级！ Lv." + s.level : "叮！";
+      const sub = (s.ding_text || "").replace(/^叮！/, "") || task.title;
+      showDingBurst(big, sub);
+      if (s.leveled_up) {
+        $("level-badge").classList.add("levelup-flash");
+        setTimeout(() => $("level-badge").classList.remove("levelup-flash"), 1300);
+      }
+    } catch (err) {
+      console.warn("[system] complete via API failed, optimistic local update:", err);
+      settleLocally(taskId);
+    }
+  }
+
+  // Offline/dev fallback: optimistic client-side settlement (not persisted).
+  function settleLocally(taskId) {
     const task = state.today_tasks.find((t) => t.id === taskId);
     if (!task || task.status === "done") return;
 

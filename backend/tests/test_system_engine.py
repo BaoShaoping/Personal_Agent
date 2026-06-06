@@ -1,10 +1,12 @@
 import json
 from datetime import date
 
+from personal_agent.plan_store import load_plan_data
 from personal_agent.system_engine import (
     ATTRIBUTE_KEYS,
     attribute_value,
     build_system_summary,
+    complete_and_settle_task,
     default_task_rewards,
     forest_stage,
     level_info,
@@ -124,3 +126,82 @@ def test_build_system_summary_shape(tmp_path):
     task = next(t for t in summary["today_tasks"] if t["id"] == "task_a")
     assert task["rewards"]["attribute"] == "intellect"
     assert summary["recent_dings"] == []
+
+
+def _setup_settlement(tmp_path, total_exp=0, task_rewards=None):
+    (tmp_path / "plans.yaml").write_text(
+        "plans:\n  - id: plan_eng\n    title: 英语能力\n    kind: side\n    status: active\n    progress_percent: 10\n",
+        encoding="utf-8",
+    )
+    task = {"id": "task_x", "plan_id": "plan_eng", "date": "2026-05-30", "title": "背单词", "status": "todo"}
+    if task_rewards is not None:
+        task["rewards"] = task_rewards
+    (tmp_path / "plan_tasks.jsonl").write_text(json.dumps(task, ensure_ascii=False) + "\n", encoding="utf-8")
+    save_system_state({"total_exp": total_exp}, tmp_path)
+
+
+def test_complete_and_settle_grants_rewards(tmp_path):
+    _setup_settlement(
+        tmp_path,
+        total_exp=0,
+        task_rewards={"exp": 40, "magic_points": 12, "attribute": "intellect", "attribute_exp": 50},
+    )
+    result = complete_and_settle_task("task_x", tmp_path)
+    assert result["ok"] is True and result["already_done"] is False
+
+    settlement = result["settlement"]
+    assert settlement["deltas"]["exp"] == 40
+    assert settlement["deltas"]["forest_growth"] == 1
+    assert settlement["leveled_up"] is False and settlement["level"] == 1
+
+    state = load_system_state(tmp_path)
+    assert state["total_exp"] == 40
+    assert state["magic_points"] == 12
+    assert state["attributes"]["intellect"]["exp"] == 50
+    assert state["forest"]["growth"] == 1
+
+    summary = build_system_summary(tmp_path)
+    assert summary["recent_dings"] and "背单词" in summary["recent_dings"][0]["text"]
+
+    done = next(t for t in load_plan_data(tmp_path).tasks if t["id"] == "task_x")
+    assert done["status"] == "done"
+
+
+def test_complete_is_idempotent(tmp_path):
+    _setup_settlement(
+        tmp_path,
+        total_exp=0,
+        task_rewards={"exp": 40, "magic_points": 12, "attribute": "intellect", "attribute_exp": 50},
+    )
+    complete_and_settle_task("task_x", tmp_path)
+    again = complete_and_settle_task("task_x", tmp_path)
+    assert again["already_done"] is True
+    # Rewards are not granted a second time.
+    assert load_system_state(tmp_path)["total_exp"] == 40
+
+
+def test_complete_detects_level_up(tmp_path):
+    _setup_settlement(
+        tmp_path,
+        total_exp=80,
+        task_rewards={"exp": 30, "magic_points": 5, "attribute": "willpower", "attribute_exp": 10},
+    )
+    settlement = complete_and_settle_task("task_x", tmp_path)["settlement"]
+    assert settlement["leveled_up"] is True
+    assert settlement["level"] == 2
+    assert "升级" in settlement["ding_text"]
+
+
+def test_complete_unknown_task_returns_error(tmp_path):
+    _setup_settlement(tmp_path)
+    result = complete_and_settle_task("nope", tmp_path)
+    assert result["ok"] is False
+
+
+def test_system_task_complete_endpoint_validates_task_id():
+    from personal_agent.api import app
+
+    client = app.test_client()
+    res = client.post("/api/system/tasks/complete", json={})
+    assert res.status_code == 400
+    assert res.get_json()["ok"] is False
