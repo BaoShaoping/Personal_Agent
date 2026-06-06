@@ -910,3 +910,15 @@ Recommended entry shape:
 - `backend/static/system_avatars.js`: the four SVG avatars.
 - `backend/personal_agent/system_engine.py`: `AVATARS`, `set_avatar`, summary `shop`.
 - `backend/static/system.js`: `openShop` / `renderShopGrid` / `setAvatar`.
+
+## 2026-06-06 - MVP Retrospective (capstone)
+
+From a frozen local single-user Growth Loop demo (direction undecided) to a live, public, multi-user closed-beta 「系统」 (half-real, half-game).
+
+Arc: decided the System direction (blueprint-first) -> built v0 (data contract -> cyberpunk panel -> settlement -> GLM -> narration; real GLM-4.6/4.5-air, Chinese + persona + quest memory; 7-level rainbow attributes, growing forest, SVG avatars + 魔法点 shop) -> tagged v0.2.0 -> hosted beta (no DB; zero server storage; browser localStorage + a thin key-hiding Cloudflare Worker proxy; Phases 1-3) -> pushed to GitHub, Cloudflare Pages auto-deploy.
+
+Landed: key hidden server-side, data local/per-browser, GLM brain, free/no-ops, push auto-deploys. Tags v0.1.0 -> v0.2.0; 131 tests; live at https://personal-agent-cid.pages.dev .
+
+Lessons: blueprint before building (fewer reworks); the key-3-concurrency + no-storage constraints produced a lighter, more private architecture; reused the early stub/fallback client logic as the hosted foundation; graceful degrade everywhere (no key / GLM fail -> rule quest + template).
+
+Now: promotion (limited closed beta). Last-mile tech before scaling: rate-limit + cost cap, tighten Worker CORS, Formspree collectors.
