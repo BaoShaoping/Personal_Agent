@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 from .audit_log import append_audit_event
-from .model_gateway import generate_response, load_model_config, model_info
+from .model_gateway import generate_response, load_model_config, model_info, with_glm_options
 from .plan_store import create_plan_task, list_active_plans
 from .system_engine import ATTRIBUTE_KEYS, default_task_rewards, infer_attribute
 
@@ -98,18 +98,18 @@ def _llm_quest(plan: dict[str, Any], config: dict[str, Any]) -> dict[str, Any] |
         {"role": "system", "content": SYSTEM_QUEST_PROMPT},
         {"role": "user", "content": _plan_prompt(plan)},
     ]
-    response = generate_response(messages, config)
+    response = generate_response(messages, with_glm_options(config, disable_thinking=True))
     if not response.get("ok"):
         return None
     return _parse_quest(str(response.get("answer") or ""), plan)
 
 
 def _parse_quest(answer: str, plan: dict[str, Any]) -> dict[str, Any] | None:
-    match = re.search(r"\{.*\}", answer, re.S)
-    if not match:
+    candidate = _extract_json_object(answer)
+    if not candidate:
         return None
     try:
-        data = json.loads(match.group(0))
+        data = json.loads(candidate)
     except (ValueError, TypeError):
         return None
     if not isinstance(data, dict):
@@ -175,6 +175,15 @@ def _plan_prompt(plan: dict[str, Any]) -> str:
 
 def _voice(title: str) -> str:
     return f"叮！宿主，今日推荐任务：{title}。完成它，离目标更近一步。"
+
+
+def _extract_json_object(text: str) -> str | None:
+    text = (text or "").strip()
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    if fenced:
+        return fenced.group(1)
+    match = re.search(r"\{.*\}", text, re.S)
+    return match.group(0) if match else None
 
 
 def _clamp(value: Any, low: int, high: int, default: int) -> int:

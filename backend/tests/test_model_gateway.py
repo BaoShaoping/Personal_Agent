@@ -9,6 +9,7 @@ from personal_agent.model_gateway import (
     generate_response,
     load_model_config,
     validate_model_config,
+    with_glm_options,
 )
 
 
@@ -122,3 +123,46 @@ def test_live_mode_parses_openai_response(monkeypatch):
     assert response["ok"] is True
     assert "系统已就绪" in response["answer"]
     assert response["usage"]["total_tokens"] == 42
+
+
+def test_with_glm_options_only_affects_glm():
+    glm = with_glm_options({"model_name": "glm-4.5-air"}, disable_thinking=True)
+    assert glm["extra_body"]["thinking"] == {"type": "disabled"}
+
+    other = with_glm_options({"model_name": "gpt-4o"}, disable_thinking=True)
+    assert "extra_body" not in other
+
+    off = with_glm_options({"model_name": "glm-4.5-air"})
+    assert "extra_body" not in off
+
+
+def test_live_payload_includes_extra_body(monkeypatch):
+    monkeypatch.setenv("PERSONAL_AGENT_API_KEY", "test-key")
+    captured = {}
+
+    class FakeResponse:
+        def read(self):
+            return b'{"choices": [{"message": {"content": "ok"}}]}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(req, timeout=0):
+        captured["body"] = req.data
+        return FakeResponse()
+
+    monkeypatch.setattr(mg.request, "urlopen", fake_urlopen)
+    config = {
+        "provider": "openai_compatible",
+        "mode": "live",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "model_name": "glm-4.5-air",
+        "api_key_env": "PERSONAL_AGENT_API_KEY",
+        "extra_body": {"thinking": {"type": "disabled"}},
+    }
+    generate_response([{"role": "user", "content": "x"}], config)
+    body = json.loads(captured["body"].decode("utf-8"))
+    assert body["thinking"] == {"type": "disabled"}

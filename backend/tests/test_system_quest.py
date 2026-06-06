@@ -84,6 +84,24 @@ def test_generate_quest_llm_clamps_out_of_range(tmp_path, monkeypatch):
     assert rewards["attribute_exp"] == 10  # clamped low
 
 
+def test_generate_quest_parses_code_fenced_json(tmp_path, monkeypatch):
+    _write_plans(tmp_path)
+    _write_live_settings(tmp_path)
+    fenced = (
+        "```json\n"
+        + json.dumps(
+            {"title": "读一篇短文", "attribute": "intellect", "exp": 12, "magic_points": 6, "attribute_exp": 18, "system_voice": "叮！加油"},
+            ensure_ascii=False,
+        )
+        + "\n```"
+    )
+    monkeypatch.setattr(system_quest, "generate_response", lambda messages, config: {"ok": True, "answer": fenced})
+
+    result = generate_quest(str(tmp_path))
+    assert result["source"] == "llm"
+    assert result["quest"]["title"] == "读一篇短文"
+
+
 def test_accept_quest_creates_task(tmp_path):
     _write_plans(tmp_path)
     quest = {

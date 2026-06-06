@@ -533,3 +533,37 @@ Recommended entry shape:
 - `backend/personal_agent/system_voice.py`: narration + template.
 - `backend/personal_agent/system_engine.py`: `_apply_rewards` uses `narrate_completion`.
 - `SYSTEM_DESIGN.md`: the v0 blueprint these steps implemented.
+
+## 2026-05-30 - Live GLM Verified + Reasoning-Model Tuning
+
+### Stage
+- GLM live integration **verified against the real endpoint** (user set `PERSONAL_AGENT_API_KEY`). The 系统's brain works end-to-end.
+
+### Product / Direction
+- Quest generation and completion narration now run on real GLM (`glm-4.5-air`). Confirmed live: gateway answer, structured quest JSON parsed into a real quest, and a one-line 系统-voice narration.
+
+### Stage Changes
+- `model_gateway`: live payload now merges an optional `extra_body`; new `with_glm_options(config, disable_thinking=True)` adds GLM's `thinking: {type: disabled}` (GLM models only).
+- `system_quest` / `system_voice`: structured/short calls disable GLM reasoning — faster, cheaper, more reliably parseable (quest ~85 vs ~415 completion tokens; ~2-3s latency).
+- `system_quest._parse_quest`: `_extract_json_object` strips ```json code fences before parsing (GLM wraps JSON in fences).
+
+### Verified
+- Full suite: `123 passed` (120 prior + 3: `with_glm_options`, live `extra_body` merge, code-fenced JSON parse).
+- Live (real GLM, thinking disabled): quest parsed to `{title, attribute, exp, magic_points, attribute_exp, system_voice}` in ~3.4s; narration "叮！任务完成，词汇魔法已升级！" in ~2.2s.
+- Root cause of the first empty response: glm-4.5-air is a reasoning model; with low `max_tokens` reasoning starved the final content. Fixed by disabling thinking for these tasks (and `settings.yaml` keeps `max_tokens: 1200`).
+
+### Decisions
+- Disable GLM reasoning for the System's structured tasks; keep it available for general `/api/ask`.
+- `settings.yaml` stays committed as `mode: mock` (offline/deterministic tests); live is opt-in via env key + local mode flip (verified out-of-band, not committed).
+
+### Risks / Open Questions
+- LLM quest titles follow the plan's language (English seed plans -> English titles); real Chinese plans yield Chinese quests. The `system_voice` is reliably Chinese.
+
+### Next
+- Optional: a small per-request "use live" override or a UI toggle so the panel can use GLM without editing `settings.yaml`.
+- Step 4 cosmetics shop; then merge `system-edition` -> `master` and tag `v0.2.0`.
+
+### Detail Pointers
+- `backend/personal_agent/model_gateway.py`: `with_glm_options`, `extra_body` passthrough.
+- `backend/personal_agent/system_quest.py`: `_extract_json_object`, thinking-disabled quest gen.
+- `backend/personal_agent/system_voice.py`: thinking-disabled narration.

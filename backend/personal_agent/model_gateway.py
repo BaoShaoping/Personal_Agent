@@ -121,6 +121,23 @@ def model_info(model_config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def with_glm_options(model_config: dict[str, Any], *, disable_thinking: bool = False) -> dict[str, Any]:
+    """Return a config copy carrying GLM-specific request options.
+
+    GLM-4.5 models reason by default, which is wasteful for short structured tasks
+    (quest JSON, one-line narration). Disabling thinking makes those calls faster,
+    cheaper, and more reliably parseable. The option is only applied to GLM models
+    so other OpenAI-compatible providers are unaffected.
+    """
+
+    config = dict(model_config or {})
+    if disable_thinking and str(config.get("model_name") or "").lower().startswith("glm"):
+        extra = dict(config.get("extra_body") or {})
+        extra["thinking"] = {"type": "disabled"}
+        config["extra_body"] = extra
+    return config
+
+
 def _mock_response(messages: list[dict[str, str]], config: dict[str, Any]) -> dict[str, Any]:
     user_message = _last_message_content(messages, "user")
     context = "\n\n".join(message.get("content", "") for message in messages if message.get("role") == "system")
@@ -161,6 +178,9 @@ def _live_openai_compatible_response(messages: list[dict[str, str]], config: dic
         "temperature": config["temperature"],
         "max_tokens": config["max_tokens"],
     }
+    extra_body = config.get("extra_body")
+    if isinstance(extra_body, dict):
+        payload.update(extra_body)
     body = json.dumps(payload).encode("utf-8")
     headers = {
         "content-type": "application/json",
