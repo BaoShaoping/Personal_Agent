@@ -4,6 +4,7 @@ from datetime import date
 from personal_agent.plan_store import load_plan_data
 from personal_agent.system_engine import (
     ATTRIBUTE_KEYS,
+    AVATARS,
     attribute_value,
     build_system_summary,
     complete_and_settle_task,
@@ -13,6 +14,7 @@ from personal_agent.system_engine import (
     level_threshold,
     load_system_state,
     save_system_state,
+    set_avatar,
 )
 
 
@@ -217,3 +219,43 @@ def test_system_task_complete_endpoint_validates_task_id():
     res = client.post("/api/system/tasks/complete", json={})
     assert res.status_code == 400
     assert res.get_json()["ok"] is False
+
+
+def test_set_avatar_free_default(tmp_path):
+    result = set_avatar("cyber", tmp_path)
+    assert result["ok"] is True and result["purchased"] is False
+    assert load_system_state(tmp_path)["character"]["avatar"] == "cyber"
+
+
+def test_set_avatar_unlock_spends_magic_then_free_to_reequip(tmp_path):
+    save_system_state({"magic_points": 100}, tmp_path)
+    result = set_avatar("genki", tmp_path)  # cost 60
+    assert result["ok"] is True and result["purchased"] is True
+
+    state = load_system_state(tmp_path)
+    assert state["magic_points"] == 40
+    assert "genki" in state["unlocked_cosmetics"]
+    assert state["character"]["avatar"] == "genki"
+
+    again = set_avatar("genki", tmp_path)
+    assert again["purchased"] is False
+    assert load_system_state(tmp_path)["magic_points"] == 40  # not charged twice
+
+
+def test_set_avatar_insufficient_magic(tmp_path):
+    save_system_state({"magic_points": 10}, tmp_path)
+    result = set_avatar("elf", tmp_path)  # cost 120
+    assert result["ok"] is False
+    assert load_system_state(tmp_path)["character"]["avatar"] == "cyber"  # unchanged
+
+
+def test_set_avatar_unknown(tmp_path):
+    assert set_avatar("nope", tmp_path)["ok"] is False
+
+
+def test_summary_includes_shop(tmp_path):
+    avatars = build_system_summary(tmp_path)["shop"]["avatars"]
+    assert len(avatars) == len(AVATARS)
+    cyber = next(a for a in avatars if a["id"] == "cyber")
+    assert cyber["unlocked"] is True and cyber["equipped"] is True  # free + default
+    assert next(a for a in avatars if a["id"] == "elf")["unlocked"] is False

@@ -716,3 +716,37 @@ Recommended entry shape:
 
 ### Detail Pointers
 - `SYSTEM_DESIGN.md` §12: the memory-layer blueprint.
+
+## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
+
+### Stage
+- Step 4 (cosmetics shop) is now partly real: the System has a visible avatar, chosen/unlocked in the shop. This brings forward the previously-deferred 二次元 character — but via code-drawn SVG (no art pipeline), matching the original "风格化代码绘制" decision.
+
+### Product / Direction
+- The 系统 now has a face. Four SVG chibi anime avatars (different styles) are equippable as the System's appearance, shown in the top bar; the shop spends 魔法点 to unlock them.
+
+### Stage Changes
+- `backend/static/system_avatars.js` (new): four hand-coded SVG chibi busts — `cyber` 赛博少女 (free), `genki` 元气少女 (60), `cool` 冷静系 (80), `elf` 精灵系 (120); `window.avatarSvg(id)`.
+- `system_engine`: `AVATARS` catalog + `character.avatar` (default cyber) + `set_avatar()` (equip; unlock by spending 魔法点 into `unlocked_cosmetics`, audited `cosmetic_purchased`); summary gains a `shop.avatars` field with unlocked/equipped/cost flags.
+- `api.py`: `POST /api/system/avatar`.
+- Panel: avatar in the top bar (`#sys-avatar`); the 商城 button now opens a real modal grid (`renderShopGrid`/`setAvatar`) instead of the placeholder toast.
+
+### Verified
+- Full suite: `131 passed` (+5: equip-free, unlock-spends-magic + free re-equip, insufficient magic, unknown id, summary shop field).
+- Static files serve (system_avatars.js 200); summary returns `character.avatar=cyber` and the 4-avatar shop with correct flags.
+- SVG/JS not visually verified by me (no node); user to eyeball in the browser.
+
+### Decisions
+- 二次元 avatars are code-drawn SVG (no image assets), keeping the project art-pipeline-free.
+- First avatar free; others cost 魔法点 (one-time unlock, then free to switch) — the first real 魔法点 sink.
+
+### Risks / Open Questions
+- The hand-coded SVG faces are simple chibi; quality is "cute/clean", not detailed illustration. Easy to refine or add more later.
+
+### Next
+- Optional: more avatars / forest-decoration shop items; merge `system-edition` -> `master` + tag `v0.2.0`.
+
+### Detail Pointers
+- `backend/static/system_avatars.js`: the four SVG avatars.
+- `backend/personal_agent/system_engine.py`: `AVATARS`, `set_avatar`, summary `shop`.
+- `backend/static/system.js`: `openShop` / `renderShopGrid` / `setAvatar`.

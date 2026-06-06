@@ -16,7 +16,7 @@ from .model_gateway import load_model_config, model_info
 from .permission_engine import evaluate_action, load_permission_mode
 from .plan_store import append_plan_progress, build_plan_context, plan_summary, update_task_status
 from .suggestion_engine import suggest_next_action
-from .system_engine import build_system_summary, complete_and_settle_task
+from .system_engine import build_system_summary, complete_and_settle_task, set_avatar
 from .system_quest import accept_quest, generate_quest
 
 
@@ -223,6 +223,18 @@ def system_quest_generate_response(payload: dict[str, Any] | None) -> tuple[int,
     avoid = [str(t) for t in payload.get("avoid")] if isinstance(payload.get("avoid"), list) else None
     try:
         result = generate_quest(DATA_DIR, plan_id=str(plan_id) if plan_id else None, avoid_titles=avoid)
+    except Exception as exc:
+        return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
+    return (200 if result.get("ok") else 400), result
+
+
+def system_avatar_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
+    payload = payload or {}
+    avatar_id = str(payload.get("avatar_id") or payload.get("avatar") or "").strip()
+    if not avatar_id:
+        return 400, {"ok": False, "error": {"message": "avatar_id is required"}}
+    try:
+        result = set_avatar(avatar_id, DATA_DIR)
     except Exception as exc:
         return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
     return (200 if result.get("ok") else 400), result
@@ -530,6 +542,13 @@ def api_system_quest_generate() -> tuple[Response, int]:
 def api_system_quest_accept() -> tuple[Response, int]:
     payload = request.get_json(silent=True)
     status_code, body = system_quest_accept_response(payload if isinstance(payload, dict) else {})
+    return jsonify(body), status_code
+
+
+@app.post("/api/system/avatar")
+def api_system_avatar() -> tuple[Response, int]:
+    payload = request.get_json(silent=True)
+    status_code, body = system_avatar_response(payload if isinstance(payload, dict) else {})
     return jsonify(body), status_code
 
 

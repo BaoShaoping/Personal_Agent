@@ -116,6 +116,9 @@
     $("magic-points").textContent = state.magic_points;
     // Show the small yellow "Mock" badge only when not running live (no GLM key).
     $("mock-badge").hidden = !!(state.model && state.model.live);
+    if (window.avatarSvg) {
+      $("sys-avatar").innerHTML = window.avatarSvg((state.character && state.character.avatar) || "cyber");
+    }
   }
 
   function renderRadar() {
@@ -342,6 +345,7 @@
     if (Array.isArray(data.today_tasks)) state.today_tasks = data.today_tasks;
     if (Array.isArray(data.recent_dings)) state.recent_dings = data.recent_dings;
     if (data.model) state.model = data.model;
+    if (data.shop) state.shop = data.shop;
   }
 
   async function loadSummary() {
@@ -439,9 +443,71 @@
     }
   }
 
+  // ----------------------------- shop / avatar ------------------------------
+  function openShop() {
+    renderShopGrid();
+    $("shop-magic").textContent = state.magic_points;
+    $("shop-modal").hidden = false;
+  }
+
+  function closeShop() {
+    $("shop-modal").hidden = true;
+  }
+
+  function renderShopGrid() {
+    const avatars = (state.shop && state.shop.avatars) || [];
+    $("avatar-grid").innerHTML = avatars
+      .map((a) => {
+        let status;
+        let btn;
+        if (a.equipped) {
+          status = '<span class="av-tag equipped">已装备</span>';
+          btn = "<button disabled>当前形象</button>";
+        } else if (a.unlocked) {
+          status = '<span class="av-tag owned">已解锁</span>';
+          btn = '<button class="av-equip" data-av="' + a.id + '">装备</button>';
+        } else {
+          status = '<span class="av-tag cost">✦ ' + a.cost + "</span>";
+          btn = '<button class="av-equip" data-av="' + a.id + '">解锁 ✦' + a.cost + "</button>";
+        }
+        return (
+          '<div class="avatar-tile' + (a.equipped ? " is-equipped" : "") + '">' +
+          '<div class="av-art">' + (window.avatarSvg ? window.avatarSvg(a.id) : "") + "</div>" +
+          '<div class="av-name">' + a.name + "</div>" +
+          status +
+          btn +
+          "</div>"
+        );
+      })
+      .join("");
+    $("avatar-grid").querySelectorAll("button[data-av]").forEach((b) => {
+      b.addEventListener("click", () => setAvatar(b.getAttribute("data-av")));
+    });
+  }
+
+  async function setAvatar(avatarId) {
+    try {
+      const res = await fetch("/api/system/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_id: avatarId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error((data.error && data.error.message) || "操作失败");
+      await loadSummary(); // refresh equipped avatar + magic points + shop flags
+      renderShopGrid();
+      $("shop-magic").textContent = state.magic_points;
+      showToast(data.purchased ? "叮！已解锁并装备新形象 ✦" : "已切换系统形象");
+    } catch (err) {
+      showToast(err.message);
+    }
+  }
+
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
-    $("shop-btn").addEventListener("click", () => showToast("商城正在施工中，敬请期待 ✦（v0 仅占位）"));
+    $("shop-btn").addEventListener("click", openShop);
+    $("shop-close").addEventListener("click", closeShop);
+    $("shop-modal").addEventListener("click", (e) => { if (e.target.id === "shop-modal") closeShop(); });
     $("quest-gen-btn").addEventListener("click", () => { proposedTitles = []; generateQuest(); });
     loadSummary();
   });

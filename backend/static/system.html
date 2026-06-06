@@ -8,10 +8,13 @@
   </head>
   <body>
     <header class="sys-topbar">
-      <div class="sys-brand">
-        <p class="eyebrow">本地成长系统 · 系统版</p>
-        <h1><span class="level-badge" id="level-badge">Lv.1</span><span id="character-name">系统</span></h1>
-        <p class="tagline">半真实半游戏 —— 真实的成长，系统的呈现</p>
+      <div class="brand-wrap">
+        <div class="sys-avatar" id="sys-avatar" title="系统外形（在商城更换）"></div>
+        <div class="sys-brand">
+          <p class="eyebrow">本地成长系统 · 系统版</p>
+          <h1><span class="level-badge" id="level-badge">Lv.1</span><span id="character-name">系统</span></h1>
+          <p class="tagline">半真实半游戏 —— 真实的成长，系统的呈现</p>
+        </div>
       </div>
       <div class="sys-status">
         <div class="exp-wrap">
@@ -91,6 +94,21 @@
     <div class="toast" id="toast" hidden></div>
     <div class="ding-overlay" id="ding-overlay" hidden></div>
 
+    <div class="modal-overlay" id="shop-modal" hidden>
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">商城 · 系统外形</p>
+            <h2>选择你的「系统」形象</h2>
+          </div>
+          <button class="modal-close" id="shop-close" type="button">✕</button>
+        </div>
+        <p class="muted modal-sub">用魔法点解锁二次元外形，选中即成为你的系统形象。当前魔法点：<span id="shop-magic">0</span> ✦</p>
+        <div class="avatar-grid" id="avatar-grid"></div>
+      </div>
+    </div>
+
+    <script src="/static/system_avatars.js"></script>
     <script src="/static/system.js"></script>
   </body>
 </html>

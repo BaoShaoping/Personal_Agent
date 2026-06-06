@@ -50,9 +50,18 @@ _ATTRIBUTE_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
 
 DEFAULT_REWARD = {"exp": 10, "magic_points": 5, "attribute_exp": 15}
 
+# System avatars (二次元外形), drawn as SVG on the frontend. `cyber` is free.
+DEFAULT_AVATAR = "cyber"
+AVATARS: list[dict[str, Any]] = [
+    {"id": "cyber", "name": "赛博少女", "cost": 0},
+    {"id": "genki", "name": "元气少女", "cost": 60},
+    {"id": "cool", "name": "冷静系", "cost": 80},
+    {"id": "elf", "name": "精灵系", "cost": 120},
+]
+
 DEFAULT_STATE: dict[str, Any] = {
     "version": 1,
-    "character": {"name": "系统", "theme": "default"},
+    "character": {"name": "系统", "theme": "default", "avatar": DEFAULT_AVATAR},
     "total_exp": 0,
     "magic_points": 0,
     "attributes": {key: {"exp": 0} for key in ATTRIBUTE_KEYS},
@@ -204,6 +213,19 @@ def build_system_summary(data_dir: str | Path = "data") -> dict[str, Any]:
     model_config = load_model_config(data_dir)
     mode = effective_mode(model_config)
 
+    unlocked = set(state.get("unlocked_cosmetics") or [])
+    equipped_avatar = state["character"].get("avatar", DEFAULT_AVATAR)
+    avatars = [
+        {
+            "id": a["id"],
+            "name": a["name"],
+            "cost": a["cost"],
+            "unlocked": a["cost"] == 0 or a["id"] in unlocked,
+            "equipped": a["id"] == equipped_avatar,
+        }
+        for a in AVATARS
+    ]
+
     return {
         "ok": True,
         "character": dict(state["character"]),
@@ -214,6 +236,7 @@ def build_system_summary(data_dir: str | Path = "data") -> dict[str, Any]:
         "quest_lines": quest_lines,
         "today_tasks": today_tasks,
         "recent_dings": _recent_dings(data_dir),
+        "shop": {"avatars": avatars},
         "model": {"mode": mode, "live": mode == "live", "configured_mode": model_config.get("mode", "mock")},
         "meta": {"data_dir": str(Path(data_dir)), "updated_at": state.get("updated_at", "")},
     }
@@ -339,6 +362,55 @@ def _append_reward_audit(
 
 
 # --------------------------------------------------------------------------- #
+# Shop / cosmetics — equip a 二次元 avatar (系统外形), spending 魔法点 to unlock
+# --------------------------------------------------------------------------- #
+def set_avatar(avatar_id: str, data_dir: str | Path = "data") -> dict[str, Any]:
+    avatar = next((a for a in AVATARS if a["id"] == str(avatar_id)), None)
+    if not avatar:
+        return {"ok": False, "error": {"message": f"未知外形：{avatar_id}"}}
+
+    state = load_system_state(data_dir)
+    unlocked = list(state.get("unlocked_cosmetics") or [])
+    cost = int(avatar["cost"])
+    purchased = False
+
+    if cost > 0 and avatar["id"] not in unlocked:
+        if state["magic_points"] < cost:
+            return {"ok": False, "error": {"message": f"魔法点不足：需要 {cost}，现有 {state['magic_points']}。"}}
+        state["magic_points"] -= cost
+        unlocked.append(avatar["id"])
+        state["unlocked_cosmetics"] = unlocked
+        purchased = True
+
+    state["character"]["avatar"] = avatar["id"]
+    saved = save_system_state(state, data_dir)
+
+    if purchased:
+        append_audit_event(
+            {
+                "event_type": "cosmetic_purchased",
+                "actor": "system",
+                "module": "system_engine",
+                "action_kind": "avatar_unlocked",
+                "target": avatar["id"],
+                "status": "success",
+                "summary": f"宿主解锁外形「{avatar['name']}」（-{cost} 魔法点）",
+                "payload": {"avatar": avatar["id"], "cost": cost},
+                "source": "system_engine",
+            },
+            data_dir=data_dir,
+        )
+
+    return {
+        "ok": True,
+        "avatar": avatar["id"],
+        "magic_points": saved["magic_points"],
+        "unlocked_cosmetics": saved["unlocked_cosmetics"],
+        "purchased": purchased,
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Internals
 # --------------------------------------------------------------------------- #
 def _normalize_state(raw: dict[str, Any]) -> dict[str, Any]:
@@ -348,6 +420,7 @@ def _normalize_state(raw: dict[str, Any]) -> dict[str, Any]:
     character = raw.get("character") if isinstance(raw.get("character"), dict) else {}
     out["character"]["name"] = str(character.get("name") or "系统")
     out["character"]["theme"] = str(character.get("theme") or "default")
+    out["character"]["avatar"] = str(character.get("avatar") or DEFAULT_AVATAR)
 
     out["total_exp"] = _coerce_int(raw.get("total_exp"), 0)
     out["magic_points"] = _coerce_int(raw.get("magic_points"), 0)
