@@ -846,6 +846,37 @@ Recommended entry shape:
 - `DEPLOY.md`: closed-beta deploy guide.
 - `backend/static/system.js`: `submitGate` / `sendFeedback` / collector config.
 
+## 2026-06-06 - Hosted Beta is LIVE
+
+### Stage
+- The hosted beta is deployed and verified. Repo pushed to GitHub (`BaoShaoping/Personal_Agent`); Cloudflare Pages connected to it (build output dir `backend/static`), auto-deploys on push.
+
+### Product / Direction
+- A public URL now serves the System panel; the GLM brain runs via the Cloudflare Worker; user data stays in the browser. This is the closed-beta surface.
+
+### Stage Changes
+- Pushed `master` + tags `v0.1.0`/`v0.2.0` to GitHub.
+- Cloudflare Pages project deployed at **https://personal-agent-cid.pages.dev**.
+
+### Verified
+- Live site: `/` 302 -> `/system.html`; `/system.{html,css,js}` + `/system_avatars.js` all 200 (so `_redirects` + output dir `backend/static` are correct).
+- GLM Worker proxy verified earlier (parseable Chinese quest); CORS `*` allows the Pages origin.
+
+### Decisions
+- Frontend on Cloudflare Pages (Git-connected, auto-deploy); GLM proxy on a separate Cloudflare Worker; both free, no server to run.
+
+### Risks / Open Questions
+- Formspree collectors not yet configured (`DEFAULT_SIGNUP_URL`/`DEFAULT_FEEDBACK_URL` empty) -> email gate lets users in but no tester list / feedback is recorded yet.
+- Worker CORS is `*` (tighten to the Pages origin before wide release).
+- Browser run not verified by me (no browser) — confirm the live URL renders + GLM quest works.
+
+### Next
+- In-browser smoke test of the live URL (gate -> quest via GLM -> complete -> persist -> feedback).
+- Optional: set up Formspree + the two URLs (then push auto-deploys) to actually collect the beta list + feedback; tighten CORS; invite a small cohort.
+
+### Detail Pointers
+- Live: https://personal-agent-cid.pages.dev ; repo: https://github.com/BaoShaoping/Personal_Agent
+
 ## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
 
 ### Stage
