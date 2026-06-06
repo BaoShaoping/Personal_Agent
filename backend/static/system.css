@@ -537,6 +537,68 @@ button:disabled { cursor: not-allowed; opacity: 0.45; box-shadow: none; }
 .av-equip { border-color: var(--magic); color: var(--magic); background: var(--magic-soft); font-weight: 700; }
 .av-equip:hover { box-shadow: var(--glow-magic); }
 
+/* ---------- Feedback button + modal textarea ---------- */
+.fb-btn { border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; padding: 5px 12px; }
+.fb-btn:hover { border-color: var(--accent); color: var(--accent); }
+.modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 10px;
+  font: inherit;
+  margin-bottom: 12px;
+}
+
+/* ---------- Email gate (first run) ---------- */
+.gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: radial-gradient(900px 500px at 50% 0%, rgba(52, 140, 255, 0.12), transparent 60%), rgba(6, 10, 20, 0.96);
+  backdrop-filter: blur(4px);
+}
+.gate-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(18, 28, 52, 0.97), rgba(10, 16, 32, 0.98));
+  box-shadow: 0 0 32px rgba(52, 160, 255, 0.25), var(--card-shadow);
+  padding: 24px;
+}
+.gate-card h2 { color: #eaf3ff; }
+#gate-email {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+}
+#gate-email:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow-cyan); }
+.gate-start {
+  min-height: 40px;
+  border-color: var(--accent);
+  color: #051018;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  font-weight: 800;
+}
+.gate-start:hover { box-shadow: var(--glow-cyan); }
+.gate-err { color: #ff8a8a; font-size: 12.5px; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 880px) {
   .sys-shell { grid-template-columns: 1fr; align-items: start; }

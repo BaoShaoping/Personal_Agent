@@ -811,6 +811,41 @@ Recommended entry shape:
 - `cloudflare-worker/`: the proxy + its config README.
 - `backend/static/system.js`: `llmQuest` / `parseQuest` / `proxyUrl` (Phase 2 wiring).
 
+## 2026-06-06 - Hosted Beta Phase 3: email gate + feedback + deploy-ready
+
+### Stage
+- Phase 3 frontend done: first-run email gate + in-app feedback, and the static panel is now deploy-ready (relative asset paths + Cloudflare Pages redirect). Remaining for a live closed beta = the user's external actions (Formspree endpoints + Pages upload).
+
+### Product / Direction
+- A tester opens the link → enters email (beta list + contact, via an external collector; data still stays in their browser) → uses the System → can submit feedback in-app. Closed-beta ready.
+
+### Stage Changes
+- `system.html`: relative asset paths (`system.css`/`system.js`/`system_avatars.js`) so `backend/static/` deploys as a static site; added the email-gate overlay, a 反馈 button (replaced the now-irrelevant 经典视图 link), and a feedback modal.
+- `system.js`: email gate (`submitGate`, regex validation, best-effort POST to a configurable `signup_url`, sets `localStorage pa_registered`, never blocks entry) + feedback (`sendFeedback` → configurable `feedback_url`, includes email+level). Both endpoints default empty (work locally) and are set via `DEFAULT_SIGNUP_URL`/`DEFAULT_FEEDBACK_URL` or localStorage.
+- `api.py`: `/system` now 302-redirects to `/static/system.html` (relative paths resolve there).
+- `backend/static/_redirects`: Cloudflare Pages `/ -> /system.html`.
+- `DEPLOY.md`: full Phase 3 setup — Formspree collectors, Worker check, Pages Direct Upload (no GitHub needed since repo is local), CORS note, closed-beta checklist.
+
+### Verified
+- Full suite: `131 passed` (api.py redirect + relative paths didn't break anything).
+- Browser-run not verified by me (no browser) — user to deploy + eyeball.
+
+### Decisions
+- Email gate is a soft registration (collect email for the list/contact), never blocks entry on a form error; data stays anonymous in the browser, not tied to the email.
+- Deploy via Cloudflare Pages Direct Upload of `backend/static/` (repo is local-only; no GitHub); `_redirects` gives a clean root URL.
+
+### Risks / Open Questions
+- Needs the user's external setup: Formspree forms + Pages upload. Until `DEFAULT_SIGNUP_URL`/`DEFAULT_FEEDBACK_URL` are set, no list/feedback is collected (app still works).
+- `ALLOW_ORIGIN="*"` on the Worker — tighten to the Pages domain before wide release.
+
+### Next
+- User: create Formspree endpoints + set the two URLs, deploy `backend/static/` to Cloudflare Pages, run the DEPLOY.md checklist → send the link to a small cohort.
+- Optional later: GLM-backed narration; tighten CORS; plan-editing UI.
+
+### Detail Pointers
+- `DEPLOY.md`: closed-beta deploy guide.
+- `backend/static/system.js`: `submitGate` / `sendFeedback` / collector config.
+
 ## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
 
 ### Stage

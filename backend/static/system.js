@@ -65,6 +65,15 @@
     "语气温暖鼓励，绝不惩罚或施压。",
   ].join("\n");
 
+  // Phase 3: external collectors (e.g. Formspree) for the beta email list + feedback.
+  // Server stores nothing; empty = skip network (entry/feedback still work locally).
+  // Set per deployment, or override in console: localStorage.setItem("signup_url", "https://formspree.io/f/xxxx").
+  const REGISTERED_KEY = "pa_registered";
+  const DEFAULT_SIGNUP_URL = "";
+  const DEFAULT_FEEDBACK_URL = "";
+  function signupUrl() { try { return localStorage.getItem("signup_url") || DEFAULT_SIGNUP_URL; } catch (e) { return DEFAULT_SIGNUP_URL; } }
+  function feedbackUrl() { try { return localStorage.getItem("feedback_url") || DEFAULT_FEEDBACK_URL; } catch (e) { return DEFAULT_FEEDBACK_URL; } }
+
   // Fresh starting state for a new tester (level 1, two starter plans).
   const SEED = {
     character: { name: "系统", theme: "default", avatar: "cyber" },
@@ -553,6 +562,69 @@
     showToast._t = setTimeout(() => { toast.hidden = true; }, 2400);
   }
 
+  // ----------------------------- email gate ---------------------------------
+  function isRegistered() { try { return !!localStorage.getItem(REGISTERED_KEY); } catch (e) { return false; } }
+  function validEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
+  async function submitGate() {
+    const email = ($("gate-email").value || "").trim();
+    const err = $("gate-err");
+    if (!validEmail(email)) { err.textContent = "请输入有效的邮箱"; err.hidden = false; return; }
+    err.hidden = true;
+    const btn = $("gate-start");
+    btn.disabled = true;
+    btn.textContent = "进入中…";
+    const url = signupUrl();
+    if (url) {
+      // Best-effort: record the email to the external collector, never block entry on it.
+      try {
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ email: email, kind: "beta_signup" }),
+        });
+      } catch (e) {
+        console.warn("[system] signup post failed (entering anyway):", e);
+      }
+    }
+    try { localStorage.setItem(REGISTERED_KEY, email); } catch (e) {}
+    btn.disabled = false;
+    btn.textContent = "开始内测";
+    $("gate-overlay").hidden = true;
+  }
+
+  // ------------------------------ feedback ----------------------------------
+  function openFeedback() { $("fb-text").value = ""; $("fb-modal").hidden = false; }
+  function closeFeedback() { $("fb-modal").hidden = true; }
+  async function sendFeedback() {
+    const text = ($("fb-text").value || "").trim();
+    if (!text) { showToast("写点什么再提交吧"); return; }
+    const url = feedbackUrl();
+    const payload = {
+      kind: "feedback",
+      text: text,
+      email: (function () { try { return localStorage.getItem(REGISTERED_KEY) || ""; } catch (e) { return ""; } })(),
+      level: levelInfo(state.total_exp).level,
+    };
+    if (url) {
+      try {
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        });
+        showToast("感谢反馈！");
+      } catch (e) {
+        console.warn(e);
+        showToast("提交失败，稍后再试");
+        return;
+      }
+    } else {
+      showToast("感谢反馈！（未配置收集端点）");
+    }
+    closeFeedback();
+  }
+
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
     state = loadState();
@@ -560,6 +632,13 @@
     $("shop-close").addEventListener("click", closeShop);
     $("shop-modal").addEventListener("click", (e) => { if (e.target.id === "shop-modal") closeShop(); });
     $("quest-gen-btn").addEventListener("click", () => { proposedTitles = []; generateQuest(); });
+    $("fb-btn").addEventListener("click", openFeedback);
+    $("fb-close").addEventListener("click", closeFeedback);
+    $("fb-send").addEventListener("click", sendFeedback);
+    $("fb-modal").addEventListener("click", (e) => { if (e.target.id === "fb-modal") closeFeedback(); });
+    $("gate-start").addEventListener("click", submitGate);
+    $("gate-email").addEventListener("keydown", (e) => { if (e.key === "Enter") submitGate(); });
     renderAll();
+    if (!isRegistered()) $("gate-overlay").hidden = false;
   });
 })();

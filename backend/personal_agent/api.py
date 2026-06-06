@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, redirect, request
 
 from .action_executor import cancel_action, execute_confirmed_action
 from .ask_service import ask, test_model_gateway
@@ -516,7 +516,9 @@ def debug_page() -> Response:
 
 @app.get("/system")
 def system_page() -> Response:
-    return Response(_read_system_html(), mimetype="text/html")
+    # The panel uses relative asset paths (for static hosting), so serve it from
+    # /static where siblings resolve; /system just redirects there for convenience.
+    return redirect("/static/system.html", code=302)
 
 
 @app.get("/api/system/summary")
