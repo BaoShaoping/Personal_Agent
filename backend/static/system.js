@@ -341,9 +341,80 @@
     renderAll();
   }
 
+  // ----------------------------- system quest -------------------------------
+  function rewardBadges(r) {
+    r = r || {};
+    const attrLabel = (ATTRS.find((a) => a.key === r.attribute) || {}).label || "";
+    return (
+      '<span class="reward-badge exp">经验 +' + (r.exp || 0) + "</span>" +
+      '<span class="reward-badge magic">✦ +' + (r.magic_points || 0) + "</span>" +
+      (attrLabel ? '<span class="reward-badge attr">' + attrLabel + " +" + (r.attribute_exp || 0) + "</span>" : "")
+    );
+  }
+
+  async function generateQuest() {
+    const btn = $("quest-gen-btn");
+    btn.disabled = true;
+    btn.textContent = "系统生成中…";
+    try {
+      const res = await fetch("/api/system/quest/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error((data.error && data.error.message) || "生成失败");
+      renderProposal(data.quest, data.source);
+    } catch (err) {
+      showToast("生成任务失败：" + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✦ 系统生成任务";
+    }
+  }
+
+  function renderProposal(quest, source) {
+    const box = $("quest-proposal");
+    const srcLabel = source === "llm" ? "系统（GLM）生成" : "系统生成";
+    box.innerHTML =
+      '<div class="qp-voice">' + (quest.system_voice || "") + "</div>" +
+      '<div class="qp-title">' + quest.title + "</div>" +
+      '<div class="reward-row">' + rewardBadges(quest.rewards) + "</div>" +
+      '<div class="qp-actions">' +
+      '<button class="qp-accept" id="qp-accept" type="button">接受任务</button>' +
+      '<button id="qp-regen" type="button">换一个</button>' +
+      '<button id="qp-cancel" type="button">取消</button>' +
+      "</div>" +
+      '<div class="qp-source">来源：' + srcLabel + "</div>";
+    box.hidden = false;
+    $("qp-accept").addEventListener("click", () => acceptQuest(quest));
+    $("qp-regen").addEventListener("click", generateQuest);
+    $("qp-cancel").addEventListener("click", () => { box.hidden = true; box.innerHTML = ""; });
+  }
+
+  async function acceptQuest(quest) {
+    try {
+      const res = await fetch("/api/system/quest/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quest: quest }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error((data.error && data.error.message) || "接受失败");
+      const box = $("quest-proposal");
+      box.hidden = true;
+      box.innerHTML = "";
+      await loadSummary();
+      showToast("叮！任务已加入今日清单");
+    } catch (err) {
+      showToast("接受任务失败：" + err.message);
+    }
+  }
+
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
     $("shop-btn").addEventListener("click", () => showToast("商城正在施工中，敬请期待 ✦（v0 仅占位）"));
+    $("quest-gen-btn").addEventListener("click", generateQuest);
     loadSummary();
   });
 })();

@@ -170,6 +170,8 @@ def create_plan_task(entry: dict[str, Any], data_dir: str | Path = "data") -> di
         "source": str(raw.get("source") or "action_executor").strip(),
         "created_at": str(raw.get("created_at") or _now_iso()).strip(),
     }
+    if isinstance(raw.get("rewards"), dict):
+        task["rewards"] = raw["rewards"]
     while task["id"] in existing_ids:
         task["id"] = _new_task_id()
 

@@ -29,8 +29,12 @@
         <section class="card" aria-label="今日任务">
           <div class="card-title">
             <h2>今日任务</h2>
-            <span id="today-count">0 项</span>
+            <div class="title-actions">
+              <span id="today-count">0 项</span>
+              <button class="quest-gen-btn" id="quest-gen-btn" type="button">✦ 系统生成任务</button>
+            </div>
           </div>
+          <div class="quest-proposal" id="quest-proposal" hidden></div>
           <div id="task-list"></div>
         </section>
 

@@ -361,6 +361,35 @@ button:disabled { cursor: not-allowed; opacity: 0.45; box-shadow: none; }
 .task-do { white-space: nowrap; border-color: var(--accent); color: var(--accent); font-weight: 700; background: var(--accent-soft); }
 .task-do:hover { box-shadow: var(--glow-cyan); }
 
+/* ---------- System quest (系统生成任务) ---------- */
+.title-actions { display: flex; align-items: center; gap: 10px; }
+.quest-gen-btn {
+  border-color: var(--magic);
+  color: var(--magic);
+  background: var(--magic-soft);
+  font-weight: 700;
+  font-size: 12.5px;
+  min-height: 30px;
+}
+.quest-gen-btn:hover { box-shadow: var(--glow-magic); border-color: var(--magic); }
+
+.quest-proposal {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--magic);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(194, 100, 255, 0.12), rgba(11, 18, 36, 0.5));
+  box-shadow: var(--glow-magic);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.qp-voice { color: #e7d6ff; line-height: 1.5; }
+.qp-title { font-weight: 800; color: #fff; }
+.qp-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.qp-accept { border-color: var(--success-line); color: var(--success); background: var(--success-soft); font-weight: 700; }
+.qp-accept:hover { box-shadow: 0 0 10px rgba(61, 220, 151, 0.45); }
+.qp-source { font-size: 11px; color: var(--muted); }
+
 /* ---------- Ding feed ---------- */
 .ding-feed { display: grid; gap: 8px; }
 .ding-item {

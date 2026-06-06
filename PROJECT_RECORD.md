@@ -462,3 +462,39 @@ Recommended entry shape:
 - `backend/personal_agent/system_engine.py`: `complete_and_settle_task`, `_apply_rewards`.
 - `backend/personal_agent/api.py`: `POST /api/system/tasks/complete`.
 - `backend/static/system.js`: `completeTask` (API) + `settleLocally` (fallback).
+
+## 2026-05-30 - System Edition Step 5 (GLM Integration + Quest Generation)
+
+### Stage
+- System Edition build, `system-edition` branch. Step 5 done (code). Next: step 6 (narration). Live GLM verification still needs the user's key in `PERSONAL_AGENT_API_KEY`.
+
+### Product / Direction
+- The 系统 can now act as a game master: it proposes a daily quest from a real plan. In live mode the LLM (GLM) returns a structured quest; otherwise a deterministic rule-based quest. Quests are proposals the user accepts (系统 proposes, 宿主 decides).
+
+### Stage Changes
+- `model_gateway.py`: `_chat_completions_url` now handles `/vN` version segments (fixes GLM `/v4`); the live OpenAI-compatible path is now test-covered (monkeypatched).
+- `data/settings.yaml`: pre-filled GLM config (`base_url` = GLM v4, `model_name: glm-4.5-air`); `mode: mock` kept as committed default so tests stay offline/deterministic; live is opt-in via env key + mode flip.
+- `system_quest.py`: `generate_quest()` (LLM structured quest with clamp/validation + rule fallback) and `accept_quest()` (creates the task + audit).
+- `plan_store.create_plan_task`: carries an optional `rewards` field so quest rewards persist.
+- `api.py`: `POST /api/system/quest/generate` + `POST /api/system/quest/accept`.
+- `system.{html,css,js}`: 「✦ 系统生成任务」 button + a confirmable quest proposal card (接受 / 换一个 / 取消).
+
+### Verified
+- Full suite: `114 passed` (105 prior + 2 model_gateway + 7 system_quest): `/v4` URL, live-response parsing, quest LLM-parse/clamp/fallback, accept-creates-task.
+- Live endpoint check (mock mode): `/api/system/quest/generate` returns a rule quest from the real main plan with a 系统-voice line; static files serve.
+
+### Decisions
+- Live LLM is opt-in (`mode: live` + env key); mock/rule fallback keeps the panel fully usable offline.
+- LLM quest output is clamped/validated; unparseable output falls back to a rule quest (never trust raw model output for writes).
+
+### Risks / Open Questions
+- Real GLM behavior is unverified until the user sets `PERSONAL_AGENT_API_KEY` and flips `mode: live` (or a per-request override).
+- Rule-quest attribute inference is keyword-based and English plan titles may default to `willpower`.
+
+### Next
+- Step 6: 系统-voice completion narration via the LLM (with the template as fallback).
+
+### Detail Pointers
+- `backend/personal_agent/system_quest.py`: quest generation + accept.
+- `backend/personal_agent/model_gateway.py`: `_chat_completions_url` `/vN` fix + tested live path.
+- `backend/static/system.js`: `generateQuest` / `renderProposal` / `acceptQuest`.

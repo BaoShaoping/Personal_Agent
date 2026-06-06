@@ -17,6 +17,7 @@ from .permission_engine import evaluate_action, load_permission_mode
 from .plan_store import append_plan_progress, build_plan_context, plan_summary, update_task_status
 from .suggestion_engine import suggest_next_action
 from .system_engine import build_system_summary, complete_and_settle_task
+from .system_quest import accept_quest, generate_quest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -211,6 +212,28 @@ def system_task_complete_response(payload: dict[str, Any] | None) -> tuple[int, 
         return 400, {"ok": False, "error": {"message": "task_id is required"}}
     try:
         result = complete_and_settle_task(task_id, DATA_DIR)
+    except Exception as exc:
+        return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
+    return (200 if result.get("ok") else 400), result
+
+
+def system_quest_generate_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
+    payload = payload or {}
+    plan_id = payload.get("plan_id")
+    try:
+        result = generate_quest(DATA_DIR, plan_id=str(plan_id) if plan_id else None)
+    except Exception as exc:
+        return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
+    return (200 if result.get("ok") else 400), result
+
+
+def system_quest_accept_response(payload: dict[str, Any] | None) -> tuple[int, dict[str, Any]]:
+    payload = payload or {}
+    quest = payload.get("quest") if isinstance(payload.get("quest"), dict) else None
+    if not quest:
+        return 400, {"ok": False, "error": {"message": "quest is required"}}
+    try:
+        result = accept_quest(quest, DATA_DIR)
     except Exception as exc:
         return 400, {"ok": False, "error": {"message": str(exc), "type": exc.__class__.__name__}}
     return (200 if result.get("ok") else 400), result
@@ -490,6 +513,20 @@ def api_system_summary() -> Response:
 def api_system_task_complete() -> tuple[Response, int]:
     payload = request.get_json(silent=True)
     status_code, body = system_task_complete_response(payload if isinstance(payload, dict) else {})
+    return jsonify(body), status_code
+
+
+@app.post("/api/system/quest/generate")
+def api_system_quest_generate() -> tuple[Response, int]:
+    payload = request.get_json(silent=True)
+    status_code, body = system_quest_generate_response(payload if isinstance(payload, dict) else {})
+    return jsonify(body), status_code
+
+
+@app.post("/api/system/quest/accept")
+def api_system_quest_accept() -> tuple[Response, int]:
+    payload = request.get_json(silent=True)
+    status_code, body = system_quest_accept_response(payload if isinstance(payload, dict) else {})
     return jsonify(body), status_code
 
 

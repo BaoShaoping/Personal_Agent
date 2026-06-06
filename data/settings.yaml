@@ -1,8 +1,8 @@
 permission_mode: ask_first
 model:
   provider: openai_compatible
-  base_url: ""
-  model_name: ""
+  base_url: "https://open.bigmodel.cn/api/paas/v4"
+  model_name: glm-4.5-air
   api_key_env: PERSONAL_AGENT_API_KEY
   temperature: 0.4
   max_tokens: 1200

@@ -1,7 +1,10 @@
+import json
 import shutil
 from pathlib import Path
 
+from personal_agent import model_gateway as mg
 from personal_agent.model_gateway import (
+    _chat_completions_url,
     build_model_messages,
     generate_response,
     load_model_config,
@@ -75,3 +78,47 @@ def test_load_model_config_defaults_when_settings_missing():
     finally:
         if empty_data.exists():
             shutil.rmtree(empty_data)
+
+
+def test_chat_completions_url_handles_version_segments():
+    base = "https://open.bigmodel.cn/api/paas/v4"
+    assert _chat_completions_url(base) == base + "/chat/completions"
+    assert _chat_completions_url("http://host/v1") == "http://host/v1/chat/completions"
+    assert _chat_completions_url("http://host") == "http://host/v1/chat/completions"
+    assert _chat_completions_url(base + "/chat/completions") == base + "/chat/completions"
+
+
+def test_live_mode_parses_openai_response(monkeypatch):
+    monkeypatch.setenv("PERSONAL_AGENT_API_KEY", "test-key")
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def read(self):
+            return json.dumps(self._payload).encode("utf-8")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(req, timeout=0):
+        # Confirms the GLM /v4 endpoint is built correctly end-to-end.
+        assert req.full_url == "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+        return FakeResponse({"choices": [{"message": {"content": "叮！系统已就绪"}}], "usage": {"total_tokens": 42}})
+
+    monkeypatch.setattr(mg.request, "urlopen", fake_urlopen)
+    config = {
+        "provider": "openai_compatible",
+        "mode": "live",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "model_name": "glm-4.5-air",
+        "api_key_env": "PERSONAL_AGENT_API_KEY",
+    }
+
+    response = generate_response([{"role": "user", "content": "你好"}], config)
+    assert response["ok"] is True
+    assert "系统已就绪" in response["answer"]
+    assert response["usage"]["total_tokens"] == 42

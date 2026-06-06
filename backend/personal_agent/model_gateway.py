@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 from urllib import error, request
@@ -214,7 +215,9 @@ def _chat_completions_url(base_url: str) -> str:
     clean = base_url.rstrip("/")
     if clean.endswith("/chat/completions"):
         return clean
-    if clean.endswith("/v1"):
+    # If the base already ends with an API version segment (/v1, /v4 for GLM, ...),
+    # append only the path; otherwise default to /v1/chat/completions.
+    if re.fullmatch(r"v\d+", clean.rsplit("/", 1)[-1]):
         return clean + "/chat/completions"
     return clean + "/v1/chat/completions"
 
