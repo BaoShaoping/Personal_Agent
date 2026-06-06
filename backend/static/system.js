@@ -48,6 +48,23 @@
     ["intellect", ["英语", "单词", "学习", "阅读", "读", "复习", "句子", "知识", "课"]],
   ];
 
+  // Phase 2: GLM proxy (Cloudflare Worker). Override via localStorage "proxy_url";
+  // empty -> pure rule mode (no GLM).
+  const DEFAULT_PROXY_URL = "https://glm-proxy.1421608856.workers.dev/";
+  function proxyUrl() {
+    try { return localStorage.getItem("proxy_url") || DEFAULT_PROXY_URL; } catch (e) { return DEFAULT_PROXY_URL; }
+  }
+  const QUEST_SYSTEM_PROMPT = [
+    "你是绑定在宿主身上的专属「系统」——像网络小说里的那种「系统」：温暖、鼓励、带一点游戏仪式感，称用户为「宿主」。",
+    "你根据宿主的长期计划和已有任务，提出 ONE 个今天就能完成的最小任务（quest）。",
+    "硬性要求：",
+    "- 必须用简体中文输出 title 和 system_voice。",
+    "- 任务要小、具体、今天能完成（约 15-30 分钟），且要新颖，不要重复已有任务。",
+    "- 只输出一个 JSON 对象，不要任何额外文字或解释。",
+    "- JSON 字段：title(字符串), attribute(intellect/constitution/willpower/creativity/spirit 之一), exp(整数5-30), magic_points(整数3-15), attribute_exp(整数10-40), system_voice(一句简体中文系统口吻台词，可用「叮！」开头)。",
+    "语气温暖鼓励，绝不惩罚或施压。",
+  ].join("\n");
+
   // Fresh starting state for a new tester (level 1, two starter plans).
   const SEED = {
     character: { name: "系统", theme: "default", avatar: "cyber" },
@@ -324,11 +341,93 @@
     };
   }
 
-  function generateQuest() {
+  function extractJson(text) {
+    text = (text || "").trim();
+    const fenced = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    if (fenced) return fenced[1];
+    const m = text.match(/\{[\s\S]*\}/);
+    return m ? m[0] : null;
+  }
+  function clampInt(v, lo, hi, def) {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? def : Math.max(lo, Math.min(n, hi));
+  }
+  function parseQuest(answer, plan) {
+    const cand = extractJson(answer);
+    if (!cand) return null;
+    let d;
+    try { d = JSON.parse(cand); } catch (e) { return null; }
+    if (!d || typeof d !== "object") return null;
+    const title = String(d.title || "").trim();
+    if (!title) return null;
+    let attr = d.attribute;
+    if (!ATTRS.some((a) => a.key === attr)) attr = inferAttribute(title + " " + plan.title);
+    return {
+      plan_id: plan.plan_id,
+      title: title,
+      rewards: {
+        exp: clampInt(d.exp, 5, 30, 10),
+        magic_points: clampInt(d.magic_points, 3, 15, 5),
+        attribute: attr,
+        attribute_exp: clampInt(d.attribute_exp, 10, 40, 15),
+      },
+      system_voice: String(d.system_voice || "").trim() || ("叮！宿主，今日推荐任务：" + title + "。"),
+    };
+  }
+  function questUserPrompt(plan, avoid) {
+    const lines = ["长期计划：" + plan.title, "进度：" + (plan.progress_percent || 0) + "%"];
+    const skip = (state.today_tasks || []).map((t) => t.title).filter(Boolean).slice(-8).concat(avoid || []);
+    if (skip.length) {
+      lines.push("", "宿主最近已有的任务，请【不要重复】，换一个不同角度：");
+      skip.slice(0, 12).forEach((t) => lines.push("- " + t));
+    }
+    lines.push("", "请按要求只返回一个 JSON 对象。");
+    return lines.join("\n");
+  }
+
+  // Try the GLM proxy (Cloudflare Worker); fall back to a rule quest on any failure.
+  async function llmQuest(plan, avoid) {
+    const url = proxyUrl();
+    if (!url) return { quest: ruleQuest(plan, avoid), source: "mock" };
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: QUEST_SYSTEM_PROMPT },
+            { role: "user", content: questUserPrompt(plan, avoid) },
+          ],
+          thinking: { type: "disabled" },
+          max_tokens: 600,
+          temperature: 0.9,
+        }),
+      });
+      const data = await res.json();
+      if (!data || !data.ok || !data.answer) throw new Error("proxy not ok");
+      const parsed = parseQuest(data.answer, plan);
+      if (!parsed) throw new Error("unparseable quest");
+      return { quest: parsed, source: "llm" };
+    } catch (e) {
+      console.warn("[system] GLM quest failed, rule fallback:", e);
+      return { quest: ruleQuest(plan, avoid), source: "mock" };
+    }
+  }
+
+  async function generateQuest() {
     if (!state.quest_lines || !state.quest_lines.length) { showToast("还没有长期计划"); return; }
     const avoid = proposedTitles.concat((state.today_tasks || []).map((t) => t.title).filter(Boolean));
     const plan = state.quest_lines[Math.floor(Math.random() * state.quest_lines.length)];
-    renderProposal(ruleQuest(plan, avoid), "mock");
+    const btn = $("quest-gen-btn");
+    btn.disabled = true;
+    btn.textContent = "系统生成中…";
+    try {
+      const result = await llmQuest(plan, avoid);
+      renderProposal(result.quest, result.source);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✦ 系统生成任务";
+    }
   }
 
   function clearProposal() {

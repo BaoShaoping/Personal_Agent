@@ -778,6 +778,39 @@ Recommended entry shape:
 ### Detail Pointers
 - `backend/static/system.js`: localStorage source of truth + all client-side logic.
 
+## 2026-06-06 - Hosted Beta Phase 2: Cloudflare Worker GLM proxy wired in
+
+### Stage
+- Phase 2 of `HOSTED_BETA_DESIGN.md`: the key-hiding GLM proxy is deployed (Cloudflare Worker) and wired into the client. Quest generation now runs on real GLM (glm-4.5-air) via the proxy, with rule fallback.
+
+### Product / Direction
+- "No host, hide the key" solved with a free Cloudflare Worker (no VM, no ops). The browser never sees the key; the Worker holds it as a secret and forwards to GLM.
+
+### Stage Changes
+- Worker deployed by the user at `https://glm-proxy.1421608856.workers.dev/` ([`cloudflare-worker/glm-proxy.js`](cloudflare-worker/glm-proxy.js)); `GLM_API_KEY` secret set.
+- `system.js`: `generateQuest` is now async and calls the proxy (`DEFAULT_PROXY_URL`, overridable via `localStorage.proxy_url`) with the 系统 persona prompt + plan/avoid context, `thinking:{type:disabled}`, parses the JSON quest (`extractJson`/`parseQuest`/clamp), and falls back to the rule quest on any failure. Narration stays template for snappiness (GLM narration is an easy later add).
+- `cloudflare-worker/README.md`: full config process (deploy via Compute→Create→Hello World, set secret/var, test, point the frontend via DEFAULT_PROXY_URL or localStorage, CORS/cost notes).
+
+### Verified
+- Live: real quest prompt → Worker → glm-4.5-air returned a parseable Chinese JSON quest (`完成5分钟冥想`, willpower, ~79 completion tokens, thinking disabled). English `hello host` test confirmed the Worker hides the key and returns clean content; earlier Chinese garble was a shell-encoding artifact, not the Worker.
+- Full suite still `131 passed` (Python untouched).
+- Browser-run not verified by me (no browser) — user to hard-refresh `/system`, click 系统生成任务 (should show 来源：系统（GLM）生成), and report any console error.
+
+### Decisions
+- Public/hosted model = glm-4.5-air with `thinking:disabled` (reasoning models return empty content when the token budget is too small; disabling keeps quests fast + parseable).
+- Quest via GLM now; narration template for now (avoid per-completion latency).
+
+### Risks / Open Questions
+- `ALLOW_ORIGIN="*"` on the Worker (tighten to the site origin before wide release).
+- Cost runs on the user's GLM key for all testers; closed beta + the ≤3-concurrency graceful-degrade contains it.
+
+### Next
+- Phase 3: email gate (external form) + in-app feedback + deploy the static frontend → closed beta. (Optional: GLM-backed narration.)
+
+### Detail Pointers
+- `cloudflare-worker/`: the proxy + its config README.
+- `backend/static/system.js`: `llmQuest` / `parseQuest` / `proxyUrl` (Phase 2 wiring).
+
 ## 2026-06-06 - Shop: SVG 二次元 Avatars (系统外形)
 
 ### Stage
