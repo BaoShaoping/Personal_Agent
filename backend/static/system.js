@@ -328,7 +328,8 @@
     let text = "叮！宿主完成「" + task.title + "」，经验 +" + (r.exp || 0) + "，✦ +" + (r.magic_points || 0);
     if (attrLabel) text += "，" + attrLabel + " ↑";
     if (leveledUp) text += "（升级！Lv." + after + "）";
-    state.recent_dings.unshift({ at: nowHHMM(), text: text });
+    const dingId = "d" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    state.recent_dings.unshift({ id: dingId, at: nowHHMM(), text: text });
     state.recent_dings = state.recent_dings.slice(0, 12);
 
     saveState();
@@ -338,6 +339,16 @@
       $("level-badge").classList.add("levelup-flash");
       setTimeout(() => $("level-badge").classList.remove("levelup-flash"), 1300);
     }
+
+    // Upgrade the feed line to a GLM-written 系统-voice narration when it returns (template stays if it fails).
+    narrateLLM(task.title, r, leveledUp, after).then((line) => {
+      if (!line) return;
+      const d = state.recent_dings.find((x) => x.id === dingId);
+      if (!d) return;
+      d.text = line;
+      saveState();
+      renderDings();
+    });
   }
 
   // ----------------------------- system quest -------------------------------
@@ -423,6 +434,39 @@
     } catch (e) {
       console.warn("[system] GLM quest failed, rule fallback:", e);
       return { quest: ruleQuest(plan, avoid), source: "mock" };
+    }
+  }
+
+  // GLM-written 「叮！」 narration for a completed task; returns null on any failure.
+  async function narrateLLM(taskTitle, rewards, leveledUp, level) {
+    const url = proxyUrl();
+    if (!url) return null;
+    const attrLabel = (ATTRS.find((a) => a.key === rewards.attribute) || {}).label || "";
+    const sys =
+      "你是绑定在宿主身上的专属「系统」（像网文里的系统：温暖、鼓励、有仪式感，称用户为「宿主」）。" +
+      "宿主刚完成了一个任务，用一句简体中文祝贺他，可用「叮！」开头。" +
+      "只输出这一句话：不要解释、不要换行、不超过 30 个字。绝不施压或惩罚。";
+    let user = "任务：" + taskTitle + "；获得经验 +" + (rewards.exp || 0) + "、魔法点 +" + (rewards.magic_points || 0);
+    if (attrLabel) user += "、" + attrLabel + " 提升";
+    if (leveledUp) user += "；并升到了 Lv." + level;
+    user += "。";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: sys }, { role: "user", content: user }],
+          thinking: { type: "disabled" },
+          max_tokens: 200,
+          temperature: 0.9,
+        }),
+      });
+      const data = await res.json();
+      if (!data || !data.ok || !data.answer) return null;
+      return String(data.answer).trim().split("\n")[0].trim().slice(0, 60) || null;
+    } catch (e) {
+      console.warn("[system] narration failed:", e);
+      return null;
     }
   }
 

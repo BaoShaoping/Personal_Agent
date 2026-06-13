@@ -942,3 +942,21 @@ Now: promotion (limited closed beta). Last-mile tech before scaling: rate-limit 
 
 ### Next
 - Per user: keep enriching features. Candidates: GLM-backed narration, more shop items (forest decorations), derive plan progress from completions, the L2 memory layer. Beta-safety (rate-limit/cost-cap/CORS/Formspree) deprioritized for now.
+
+## 2026-06-06 - GLM-written completion narration (hosted)
+
+### Stage
+- Feature enrichment: completion 「叮！」 narration now written by GLM (was a template).
+
+### Stage Changes
+- `system.js`: on task completion, settle + show the instant template burst (snappy), then asynchronously call the GLM proxy (`narrateLLM`, thinking disabled, ~30-char one-liner) and upgrade that feed entry's text to the GLM-written 系统-voice line. Template stays if the call fails (graceful). Burst stays template for instant feedback; the persistent feed line carries the GLM voice.
+
+### Verified
+- Full suite `131 passed`; live proxy narration returns a clean short Chinese line (e.g. "叮！宿主真棒，词汇量又增加了！", ~13 tokens, thinking disabled).
+
+### Decisions
+- Keep completion instant (template burst) + upgrade the feed line via GLM async — avoids a 3-10s wait per completion while still making the System "speak".
+- Committed locally only — NOT pushed (live updates only when the user chooses to push).
+
+### Next
+- Per user: continue feature enrichment (more shop items / plan progress from completions / memory layer). Beta-safety (rate-limit/cost-cap/CORS/Formspree) still deprioritized.
