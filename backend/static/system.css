@@ -554,6 +554,44 @@ button:disabled { cursor: not-allowed; opacity: 0.45; box-shadow: none; }
   margin-bottom: 12px;
 }
 
+/* ---------- Plan editor ---------- */
+#plan-edit-list { display: grid; gap: 8px; margin-bottom: 12px; }
+.plan-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+.plan-row input[type="text"],
+.plan-add input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 6px 10px;
+  font: inherit;
+}
+.plan-row input:focus,
+.plan-add input:focus { outline: none; border-color: var(--accent); }
+.plan-kind,
+.plan-add select {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 4px 8px;
+  font: inherit;
+}
+.plan-del { min-height: 34px; width: 36px; border-color: var(--line); color: var(--muted); }
+.plan-del:hover { border-color: #fda29b; color: #ff8a8a; }
+.plan-add {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
 /* ---------- Email gate (first run) ---------- */
 .gate-overlay {
   position: fixed;

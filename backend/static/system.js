@@ -96,6 +96,9 @@
   let currentProposal = null;
 
   function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
 
   // ----------------------------- persistence --------------------------------
   function mergeSeed(s) {
@@ -247,7 +250,7 @@
         const kindLabel = q.kind === "main" ? "主线" : "支线";
         return (
           '<div class="quest"><div class="quest-head">' +
-          '<span class="quest-title">' + q.title + "</span>" +
+          '<span class="quest-title">' + esc(q.title) + "</span>" +
           '<span class="quest-kind ' + q.kind + '">' + kindLabel + "</span></div>" +
           '<div class="quest-track"><div class="quest-fill" style="width:' + (q.progress_percent || 0) + '%"></div></div>' +
           '<div class="quest-pct">' + (q.progress_percent || 0) + "%</div></div>"
@@ -280,7 +283,7 @@
         const btn = done ? '<button class="task-do" disabled>已完成</button>' : '<button class="task-do" data-task="' + t.id + '">完成</button>';
         return (
           '<div class="sys-task' + (done ? " done" : "") + '">' +
-          '<div class="task-main"><div class="task-name">' + t.title + "</div>" +
+          '<div class="task-main"><div class="task-name">' + esc(t.title) + "</div>" +
           '<div class="reward-row">' + rewardBadges(t.rewards) + "</div></div>" + btn + "</div>"
         );
       })
@@ -292,7 +295,7 @@
 
   function renderDings() {
     $("ding-feed").innerHTML = state.recent_dings
-      .map((d) => '<div class="ding-item"><span class="at">' + d.at + "</span><span>" + d.text + "</span></div>")
+      .map((d) => '<div class="ding-item"><span class="at">' + esc(d.at) + "</span><span>" + esc(d.text) + "</span></div>")
       .join("");
   }
 
@@ -452,8 +455,8 @@
     const box = $("quest-proposal");
     const srcLabel = source === "llm" ? "系统（GLM）生成" : "系统生成";
     box.innerHTML =
-      '<div class="qp-voice">' + (quest.system_voice || "") + "</div>" +
-      '<div class="qp-title">' + quest.title + "</div>" +
+      '<div class="qp-voice">' + esc(quest.system_voice || "") + "</div>" +
+      '<div class="qp-title">' + esc(quest.title) + "</div>" +
       '<div class="reward-row">' + rewardBadges(quest.rewards) + "</div>" +
       '<div class="qp-actions">' +
       '<button class="qp-accept" id="qp-accept" type="button">接受任务</button>' +
@@ -548,7 +551,7 @@
   // -------------------------------- effects ---------------------------------
   function showDingBurst(big, sub) {
     const overlay = $("ding-overlay");
-    overlay.innerHTML = '<div class="ding-burst"><span class="big">' + big + '</span><span class="sub">' + sub + "</span></div>";
+    overlay.innerHTML = '<div class="ding-burst"><span class="big">' + esc(big) + '</span><span class="sub">' + esc(sub) + "</span></div>";
     overlay.hidden = false;
     clearTimeout(showDingBurst._t);
     showDingBurst._t = setTimeout(() => { overlay.hidden = true; overlay.innerHTML = ""; }, 1500);
@@ -625,6 +628,64 @@
     closeFeedback();
   }
 
+  // ------------------------------ plan editor -------------------------------
+  function openPlans() { renderPlanList(); $("plans-modal").hidden = false; }
+  function closePlans() { $("plans-modal").hidden = true; }
+
+  function renderPlanList() {
+    const plans = state.quest_lines || [];
+    const box = $("plan-edit-list");
+    box.innerHTML = plans.length
+      ? plans
+          .map((p, i) =>
+            '<div class="plan-row">' +
+            '<input type="text" data-i="' + i + '" data-f="title" value="' + esc(p.title) + '" />' +
+            '<select class="plan-kind" data-i="' + i + '" data-f="kind">' +
+            '<option value="main"' + (p.kind === "main" ? " selected" : "") + ">主线</option>" +
+            '<option value="side"' + (p.kind !== "main" ? " selected" : "") + ">支线</option>" +
+            "</select>" +
+            '<button class="plan-del" data-del="' + i + '" type="button" title="删除">✕</button>' +
+            "</div>"
+          )
+          .join("")
+      : '<p class="muted">还没有计划，在下面添加一个吧。</p>';
+
+    box.querySelectorAll("input[data-i], select[data-i]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const i = parseInt(el.getAttribute("data-i"), 10);
+        const f = el.getAttribute("data-f");
+        if (!state.quest_lines[i]) return;
+        const v = (el.value || "").trim();
+        if (f === "title" && !v) { el.value = state.quest_lines[i].title; return; }
+        state.quest_lines[i][f] = v;
+        saveState();
+        renderQuests();
+      });
+    });
+    box.querySelectorAll("button[data-del]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const i = parseInt(b.getAttribute("data-del"), 10);
+        state.quest_lines.splice(i, 1);
+        saveState();
+        renderQuests();
+        renderPlanList();
+      });
+    });
+  }
+
+  function addPlan() {
+    const input = $("plan-new-title");
+    const title = (input.value || "").trim();
+    if (!title) { showToast("先写个计划名"); return; }
+    const kind = $("plan-new-kind").value === "main" ? "main" : "side";
+    state.quest_lines.push({ plan_id: "plan_" + Date.now(), title: title, kind: kind, progress_percent: 0 });
+    input.value = "";
+    saveState();
+    renderQuests();
+    renderPlanList();
+    showToast("已添加计划");
+  }
+
   // --------------------------------- init -----------------------------------
   document.addEventListener("DOMContentLoaded", function () {
     state = loadState();
@@ -632,6 +693,11 @@
     $("shop-close").addEventListener("click", closeShop);
     $("shop-modal").addEventListener("click", (e) => { if (e.target.id === "shop-modal") closeShop(); });
     $("quest-gen-btn").addEventListener("click", () => { proposedTitles = []; generateQuest(); });
+    $("plans-btn").addEventListener("click", openPlans);
+    $("plans-close").addEventListener("click", closePlans);
+    $("plans-modal").addEventListener("click", (e) => { if (e.target.id === "plans-modal") closePlans(); });
+    $("plan-add-btn").addEventListener("click", addPlan);
+    $("plan-new-title").addEventListener("keydown", (e) => { if (e.key === "Enter") addPlan(); });
     $("fb-btn").addEventListener("click", openFeedback);
     $("fb-close").addEventListener("click", closeFeedback);
     $("fb-send").addEventListener("click", sendFeedback);

@@ -922,3 +922,23 @@ Landed: key hidden server-side, data local/per-browser, GLM brain, free/no-ops, 
 Lessons: blueprint before building (fewer reworks); the key-3-concurrency + no-storage constraints produced a lighter, more private architecture; reused the early stub/fallback client logic as the hosted foundation; graceful degrade everywhere (no key / GLM fail -> rule quest + template).
 
 Now: promotion (limited closed beta). Last-mile tech before scaling: rate-limit + cost cap, tighten Worker CORS, Formspree collectors.
+
+## 2026-06-06 - Plan editing UI (set your own goals)
+
+### Stage
+- Feature enrichment (user's #1 priority now over beta-safety). Closes a vision gap: hosted testers can now define their OWN long-term plans instead of only the two generic starters.
+
+### Stage Changes
+- `system.html`/`system.css`/`system.js`: a 「管理计划」 button on the 任务线 card opens a plan-editor modal — add / rename / switch kind (主线/支线) / delete plans; all persisted to localStorage (`quest_lines`), re-rendering quest lines immediately. Quest generation already draws from `quest_lines`, so new plans feed the System right away.
+- Added `esc()` HTML-escaping at all render boundaries (quest/task/proposal titles, ding feed, burst) since plan titles are now user input (titles also propagate into rule quests).
+
+### Verified
+- Full suite `131 passed` (Python untouched); plan-editor markup + JS served.
+- Live self-test of the deployed beta passed earlier (user confirmed).
+
+### Decisions
+- Plan editing lives in the hosted localStorage client (system.js), not the local Flask version.
+- Committed locally only — NOT pushed (per user preference; pushing auto-deploys, so the live site updates only when the user chooses to push).
+
+### Next
+- Per user: keep enriching features. Candidates: GLM-backed narration, more shop items (forest decorations), derive plan progress from completions, the L2 memory layer. Beta-safety (rate-limit/cost-cap/CORS/Formspree) deprioritized for now.

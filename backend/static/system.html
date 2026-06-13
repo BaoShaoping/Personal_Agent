@@ -76,7 +76,7 @@
         <section class="card" aria-label="任务线">
           <div class="card-title">
             <h2>任务线</h2>
-            <span>主线 / 支线</span>
+            <button class="fb-btn" id="plans-btn" type="button">管理计划</button>
           </div>
           <div id="quest-list"></div>
         </section>
@@ -120,6 +120,28 @@
         <p class="muted modal-sub">遇到的问题、想要的功能、任何吐槽都欢迎。</p>
         <textarea id="fb-text" rows="5" placeholder="写点什么…"></textarea>
         <button class="qp-accept" id="fb-send" type="button">提交反馈</button>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="plans-modal" hidden>
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">长期计划</p>
+            <h2>管理你的目标</h2>
+          </div>
+          <button class="modal-close" id="plans-close" type="button">✕</button>
+        </div>
+        <p class="muted modal-sub">系统会从这些计划里给你生成每日任务。主线 = 核心目标，支线 = 辅助。</p>
+        <div id="plan-edit-list"></div>
+        <div class="plan-add">
+          <input id="plan-new-title" type="text" placeholder="新计划，例如：学好英语" />
+          <select id="plan-new-kind">
+            <option value="main">主线</option>
+            <option value="side">支线</option>
+          </select>
+          <button class="qp-accept" id="plan-add-btn" type="button">添加</button>
+        </div>
       </div>
     </div>
 
