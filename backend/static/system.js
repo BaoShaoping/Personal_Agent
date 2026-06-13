@@ -25,6 +25,7 @@
   };
   const RAINBOW = ["#ff5a5a", "#ff9f43", "#ffd93d", "#4ade80", "#34c8ff", "#5b8cff", "#c264ff"];
   const ATTR_EXP_PER_LEVEL = 300;
+  const PLAN_PROGRESS_PER_TASK = 4; // each completed task advances its plan's progress bar
 
   // Avatar catalog (mirrors backend AVATARS; SVGs in system_avatars.js).
   const AVATAR_CATALOG = [
@@ -321,6 +322,10 @@
     if (r.attribute && state.attributes[r.attribute]) state.attributes[r.attribute].exp += r.attribute_exp || 0;
     state.forest.growth += 1;
     pendingTreePop = true;
+
+    // Advance the matching plan's progress bar.
+    const planLine = (state.quest_lines || []).find((q) => q.plan_id === task.plan_id);
+    if (planLine) planLine.progress_percent = Math.min(100, (planLine.progress_percent || 0) + PLAN_PROGRESS_PER_TASK);
 
     const after = levelInfo(state.total_exp).level;
     const leveledUp = after > before;

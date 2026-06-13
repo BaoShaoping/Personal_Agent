@@ -354,7 +354,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; box-shadow: none; }
 .quest-kind.side { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(52, 200, 255, 0.4); }
 .quest-title { font-weight: 700; }
 .quest-track { height: 8px; border-radius: 999px; background: rgba(120, 160, 255, 0.12); border: 1px solid var(--line); overflow: hidden; margin-top: 9px; }
-.quest-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 8px rgba(52, 180, 255, 0.5); }
+.quest-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 8px rgba(52, 180, 255, 0.5); transition: width 480ms ease; }
 .quest-pct { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* ---------- Today tasks ---------- */

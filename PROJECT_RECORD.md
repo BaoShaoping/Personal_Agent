@@ -960,3 +960,22 @@ Now: promotion (limited closed beta). Last-mile tech before scaling: rate-limit 
 
 ### Next
 - Per user: continue feature enrichment (more shop items / plan progress from completions / memory layer). Beta-safety (rate-limit/cost-cap/CORS/Formspree) still deprioritized.
+
+## 2026-06-06 - Plan progress auto-advances + deploy (3 features live)
+
+### Stage
+- Feature enrichment + first push since going local-only. Pushed to GitHub -> Cloudflare Pages auto-deploys.
+
+### Stage Changes
+- `system.js`: completing a task advances its plan's `progress_percent` (+4%, capped 100) -> the 任务线 bar moves on every completion; `.quest-fill` got a width transition for a smooth animation.
+- Deployed (this push): plan editing UI, GLM-written narration, and plan-progress auto-advance.
+
+### Verified
+- Full suite `131 passed`. Live proxy paths (quest + narration) verified earlier.
+
+### Decisions
+- +4% per completed task (~25 tasks to fill a long-term plan) — visible movement without trivializing long-term goals.
+- Pushed at the user's explicit request ("完成后push"); Pages auto-deploys backend/static.
+
+### Next
+- Per user: keep enriching (more shop items / memory layer) or observe the live beta. Beta-safety (rate-limit/cost-cap/CORS/Formspree) still pending before wide promotion.
