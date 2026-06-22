@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>井村 · LLM Village</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: #0d1410; color: #eee; overflow: hidden;
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    #game-wrap { position: fixed; inset: 0; overflow: hidden; }
+    #game, #game canvas { width: 100%; height: 100%; display: block; }
+
+    /* controls hint (bottom-left, hidden behind dialogue when it opens) */
+    #controls {
+      position: absolute; left: 10px; bottom: 10px; z-index: 4;
+      font-size: 12px; color: #9bbf9b; background: rgba(0,0,0,.5);
+      padding: 5px 10px; border-radius: 6px; pointer-events: none; max-width: 64%;
+    }
+    #controls b { color: #ffe082; }
+
+    /* HUD (top-left) */
+    #hud {
+      position: absolute; top: 10px; left: 10px; z-index: 5;
+      background: rgba(0,0,0,.6); color: #fff; font-size: 12px; line-height: 1.5;
+      padding: 8px 10px; border-radius: 6px; max-width: 230px; pointer-events: none;
+    }
+    #hud b { color: #ffe082; }
+
+    /* objective bar (top-center, persistent) */
+    #objective {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      z-index: 6; background: rgba(0,0,0,.62); color: #ffe9a8; font-size: 12px;
+      padding: 5px 12px; border-radius: 14px; max-width: 60%; text-align: center;
+      line-height: 1.4; pointer-events: none; border: 1px solid rgba(255,224,130,.25);
+    }
+    /* toast (below the objective bar) */
+    #toast {
+      position: absolute; top: 46px; left: 50%; transform: translateX(-50%);
+      z-index: 8; background: #2e7d32; color: #fff; font-size: 13px;
+      padding: 8px 14px; border-radius: 20px; opacity: 0; transition: opacity .3s;
+      pointer-events: none; white-space: nowrap; max-width: 70%;
+    }
+    #toast.show { opacity: 1; }
+
+    /* LLM connection badge (top-right) */
+    #llm-badge {
+      position: absolute; top: 10px; right: 10px; z-index: 8;
+      font-size: 12px; padding: 4px 9px; border-radius: 12px;
+      background: rgba(0,0,0,.6); color: #9fb0c0; border: 1px solid #9fb0c0;
+      cursor: default; user-select: none;
+    }
+
+    /* dialogue (bottom) */
+    #dialogue {
+      position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 9;
+      background: rgba(20,28,22,.96); border: 2px solid #6aa84f; border-radius: 10px;
+      padding: 12px 14px; backdrop-filter: blur(2px);
+    }
+    #dialogue.hidden { display: none; }
+    #dlg-header { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    #dlg-emoji { font-size: 18px; }
+    #dlg-name { color: #ffe082; }
+    #dlg-text { font-size: 14px; line-height: 1.6; min-height: 46px; margin-bottom: 10px; }
+    #dlg-text .player-line { color: #9bbf9b; margin-bottom: 4px; }
+    #dlg-text .npc-line { color: #fff; }
+    #dlg-text .thinking { color: #888; font-style: italic; }
+    #dlg-input-row { display: flex; gap: 8px; }
+    #dlg-input {
+      flex: 1; padding: 9px 11px; border-radius: 6px; border: 1px solid #456;
+      background: #0e1812; color: #fff; font-size: 14px; outline: none;
+    }
+    #dlg-input:focus { border-color: #6aa84f; }
+    #dlg-send {
+      padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer;
+      background: #6aa84f; color: #06210b; font-weight: 700; font-size: 14px;
+    }
+    #dlg-send:hover { background: #7dbb60; }
+
+    /* solved banner */
+    #banner {
+      position: absolute; inset: 0; z-index: 12; display: flex;
+      align-items: center; justify-content: center; text-align: center;
+      background: rgba(0,0,0,.72); color: #fff; font-size: 18px; line-height: 1.7;
+      padding: 40px; white-space: pre-wrap; cursor: pointer;
+    }
+    #banner.hidden { display: none; }
+
+    .help { font-size: 12px; color: #9bbf9b; max-width: 800px; text-align: center; }
+    .help code { background: #0e1812; padding: 1px 5px; border-radius: 4px; color: #ffe082; }
+  </style>
+</head>
+<body>
+  <div id="game-wrap">
+    <div id="game"></div>
+
+    <div id="hud"></div>
+    <div id="objective"></div>
+    <div id="toast"></div>
+    <div id="llm-badge" title="">LLM 检测中…</div>
+
+    <div id="dialogue" class="hidden">
+      <div id="dlg-header"><span id="dlg-emoji">🙂</span> <span id="dlg-name"></span></div>
+      <div id="dlg-text"></div>
+      <div id="dlg-input-row">
+        <input id="dlg-input" autocomplete="off" placeholder="说点什么…（回车发送，Esc 离开）" />
+        <button id="dlg-send">说</button>
+      </div>
+    </div>
+
+    <div id="banner" class="hidden"></div>
+    <div id="controls"><b>井村 · LLM Village</b> ｜ WASD/方向键移动 · 走近村民或物件按 <b>E</b> 互动 · 右上角小地图看全局</div>
+  </div>
+
+  <!-- Phaser from CDN, then game scripts in dependency order -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/pixels.js"></script>
+  <script src="src/art.js"></script>
+  <script src="src/world.js"></script>
+  <script src="src/npcs.js"></script>
+  <script src="src/quest.js"></script>
+  <script src="src/interactables.js"></script>
+  <script src="src/llm.js"></script>
+  <script src="src/dialogue.js"></script>
+  <script src="src/player.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

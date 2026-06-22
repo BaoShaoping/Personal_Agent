@@ -251,6 +251,48 @@
 .set-danger { border-color: #fda29b; color: #ff8a8a; background: rgba(255, 90, 90, 0.08); font-weight: 700; }
 .set-danger:hover { box-shadow: 0 0 10px rgba(255, 90, 90, 0.4); border-color: #ff8a8a; }
 
+/* ---- TEMPORARY PROMO: LLM Village cross-link (delete with the HTML/JS promo block) ---- */
+.game-promo {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 45;
+  display: flex;
+  max-width: 300px;
+  border: 1px solid rgba(95, 200, 255, 0.55);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(20, 48, 94, 0.92), rgba(10, 22, 48, 0.95));
+  box-shadow: 0 0 18px rgba(40, 130, 230, 0.35), 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.game-promo.show { opacity: 1; transform: none; }
+.game-promo:hover { box-shadow: 0 0 24px rgba(52, 180, 255, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5); }
+.gp-link { display: flex; align-items: center; gap: 10px; padding: 11px 30px 11px 13px; text-decoration: none; color: #eaf6ff; }
+.gp-emoji { font-size: 22px; filter: drop-shadow(0 0 6px rgba(80, 200, 255, 0.7)); }
+.gp-text { display: grid; gap: 2px; }
+.gp-text b { font-size: 13.5px; font-weight: 800; color: #fff; }
+.gp-text small { font-size: 11.5px; color: var(--muted); }
+.gp-link:hover .gp-text b { text-shadow: 0 0 8px rgba(80, 200, 255, 0.7); }
+.game-promo-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-height: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 180, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--muted);
+}
+.game-promo-x:hover { color: var(--accent); border-color: var(--accent); box-shadow: none; }
+
 @media (max-width: 720px) {
   .hello-body-grid { grid-template-columns: 1fr; }
   .hello-menu { border-left: none; border-top: 1px solid rgba(80, 190, 255, 0.18); padding-left: 0; padding-top: 12px; }

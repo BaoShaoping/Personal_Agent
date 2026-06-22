@@ -979,3 +979,74 @@ Now: promotion (limited closed beta). Last-mile tech before scaling: rate-limit 
 
 ### Next
 - Per user: keep enriching (more shop items / memory layer) or observe the live beta. Beta-safety (rate-limit/cost-cap/CORS/Formspree) still pending before wide promotion.
+
+## 2026-06-22 - Dynamic 系统 hello page + dashboard visual overhaul
+
+### Stage
+- Visual/feature enrichment on the hosted beta. Added a new landing page and heavily reworked the panel visuals. Frontend-only — no backend/Python changes (131-test baseline unaffected).
+
+### Product / Direction
+- New entry experience: the root URL now serves a dynamic「系统」activation/hello page (web-novel "System" style, modeled on a reference image), which routes into the existing dashboard. The dashboard itself got a cyberpunk visual overhaul.
+
+### Stage Changes
+- New hello/landing (`backend/static/index.{html,css,js}`): a「系统」activation window wired to real localStorage data (宿主名, 称号 ladder, 等级/经验, the 5 real attributes). **Dynamic boot sequence**: 检测 → 激活中 % counts up + progress bar fills → 激活成功 flash → 欢迎 → stats/menu/tip slide in. Cyberpunk backdrop (perspective neon grid floor + falling data-streak columns + cyan/magenta neon + summon platform). 宋体 title. Framed HUD sub-panels with corner brackets. Real **系统设置** (rename 宿主 / set GLM `proxy_url` / reset data); 技能·背包·成就 locked as coming-soon.
+- Dashboard overhaul (`backend/static/system.{html,css,js}`): chamfered HUD frames with an Apple-style traveling light ring + breathing glow, drifting particles + scan sweep, shimmering titles, panel corner brackets, central **hero avatar + 修为 ring + editable host identity** (宿主名 + 称号), title banner, brightness pass, glowing attribute dots / button icons.
+- `backend/static/_redirects`: root `/` now serves `index.html` (hello page); dashboard at `/system.html` (was `/ → /system.html`).
+- `references/`: saved the three design reference images (extracted from the session transcript) + a README manifest.
+
+### Verified
+- Headless Edge renders confirmed boot mid/final frames, the settings modal, locked items, and the falling streaks. Visual-only — no automated browser tests added.
+- Python suite untouched (no backend changes this session).
+
+### Decisions
+- Hello page is the entry "character/home" screen and uses **real app data** (not the mockup's fictional 力量/敏捷), preserving 半真实 integrity.
+- **宋体** (SimSun) chosen for the title — zero-download, Windows-native, serif — a deliberate serif-in-cyberpunk contrast, over bundling a sci-fi CJK font. Non-Windows falls back to Songti/Noto serif.
+- Pixel-perfect replication of the AI-art reference is explicitly **not** a goal (live CSS can't match organic bloom); the **dynamic boot sequence** is the deliberate "code beats a static picture" win.
+- Frontend/localStorage only; the hello page duplicates small level/attr derivations rather than importing system.js (no backend coupling).
+
+### Risks / Open Questions
+- 宋体/SimSun is Windows-only; other platforms get a generic serif fallback (acceptable).
+- The landing adds one click before the dashboard every visit (kept intentionally as ritual; skip-on-return is a later option).
+- Pushing auto-deploys Cloudflare Pages → the live root switches to the hello page (intended).
+
+### Next
+- Per user: stop polishing the landing; return to the **core daily GLM quest loop** on the dashboard.
+- Still-pending beta-safety: Worker rate-limit/cost-cap, tighten CORS, Formspree collectors.
+
+### Detail Pointers
+- `backend/static/index.{html,css,js}`: hello/activation page (boot sequence, cyberpunk bg, 系统设置).
+- `backend/static/system.{html,css,js}`: dashboard visual overhaul (HUD frame, hero identity, banner).
+- `backend/static/_redirects`: root → hello page.
+- `references/`: design reference art + manifest.
+
+## 2026-06-22 - Co-host LLM Village game at /game/ + welcome promo
+
+### Stage
+- Cross-product deploy-reuse: the independent LLM Village game (Phaser + LLM NPCs; dev sandbox at `games/llm-village/`) now ships from the system's **existing** Cloudflare Pages deployment instead of a separate Cloudflare project. Frontend-only.
+
+### Product / Direction
+- One deploy, one Worker, one domain: the game is served at `/game/` on the system's site and reuses the same GLM Worker proxy. A temporary promo on the welcome screen cross-links to it. (Deliberately did NOT merge game/system data — game = fiction/world; system = real growth.)
+
+### Stage Changes
+- Copied the game's web files (`index.html` + `src/`) into `backend/static/game/` (the Pages output dir) so the existing auto-deploy serves them at `/game/`. Game runs unchanged under the sub-path (relative script paths + Phaser CDN; `config.js` `PROXY_URL` already points at the live Worker). Non-web files (`worker/`, `glm_local_proxy.py`, `*.mjs/.md`, screenshots) were not copied.
+- `backend/static/index.{html,css,js}`: a temporary, dismissible bottom-right「🎮 新游戏 · 井村」promo on the welcome screen (fades in after the boot, ✕ remembered in localStorage, links `game/index.html`), wrapped in a clearly-marked one-block-removable section.
+
+### Verified
+- Re-synced copy matches source (index.html byte-identical; all 11 `src/` files). Security grep: no API key in the game's browser code — `config.js` PROXY_URL is the Worker; the "GLM_API_KEY" hits are only user-facing status strings. Key stays the Worker secret.
+
+### Decisions
+- Game lives under `backend/static/game/` (**copied**, not moved) — `games/llm-village/` stays the dev sandbox; re-sync = re-copy on each game update (drift is the tradeoff). Committed into the repo (was untracked) so it deploys with the system.
+- Game rides the SAME Worker + GLM key as the system (shared ≤3-concurrent limit). Acceptable for a soft launch; a separate Worker/key is the later option if traffic grows.
+
+### Risks / Open Questions
+- Public LLM game = bigger abuse surface (every NPC message is a GLM call on the shared key). Keep the link unlisted / add Worker rate-limit+cap before wide promotion.
+- Two copies of the game (dev `games/llm-village/` + deployed `backend/static/game/`) can drift; re-copy on each change.
+
+### Next
+- After push + Pages deploy: smoke-test `/game/` (NPC replies via GLM) and the welcome popup link.
+- Beta-safety still pending: Worker rate-limit/cost-cap, tighten CORS.
+
+### Detail Pointers
+- `backend/static/game/`: deployed copy of the LLM Village game (served at `/game/`).
+- `games/llm-village/`: the game's dev sandbox (untracked; source of truth for edits).
+- `backend/static/index.{html,css,js}`: welcome-screen promo block.

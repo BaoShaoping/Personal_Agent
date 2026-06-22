@@ -83,6 +83,16 @@
       </div>
     </div>
 
+    <!-- TEMPORARY PROMO: cross-link to the LLM Village game (/game/).
+         To remove: delete this block + the "TEMPORARY PROMO" CSS in index.css + initGamePromo() in index.js. -->
+    <div class="game-promo" id="game-promo" hidden>
+      <button class="game-promo-x" id="game-promo-x" type="button" aria-label="关闭">✕</button>
+      <a class="gp-link" href="game/index.html">
+        <span class="gp-emoji">🎮</span>
+        <span class="gp-text"><b>新游戏 · 井村</b><small>LLM 村民开放小镇 · 点击试玩 ▸</small></span>
+      </a>
+    </div>
+
     <div class="toast" id="toast" hidden></div>
     <script src="index.js"></script>
   </body>

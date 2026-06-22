@@ -110,6 +110,25 @@
     location.reload();
   }
 
+  // TEMPORARY PROMO: LLM Village cross-link — fades in after boot, ✕ dismiss remembered.
+  function initGamePromo() {
+    var el = $("game-promo");
+    if (!el) return;
+    var KEY = "game_promo_dismissed";
+    try { if (localStorage.getItem(KEY)) return; } catch (e) {}
+    setTimeout(function () {
+      el.hidden = false;
+      requestAnimationFrame(function () { el.classList.add("show"); });
+    }, 3400);
+    var x = $("game-promo-x");
+    if (x) x.addEventListener("click", function (e) {
+      e.preventDefault();
+      el.classList.remove("show");
+      setTimeout(function () { el.hidden = true; }, 350);
+      try { localStorage.setItem(KEY, "1"); } catch (e) {}
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     state = loadState() || {};
     state.character = state.character || {};
@@ -147,5 +166,6 @@
     if ($("set-reset")) $("set-reset").addEventListener("click", resetData);
 
     runBoot();
+    initGamePromo();
   });
 })();
