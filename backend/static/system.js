@@ -77,7 +77,7 @@
 
   // Fresh starting state for a new tester (level 1, two starter plans).
   const SEED = {
-    character: { name: "系统", theme: "default", avatar: "cyber" },
+    character: { name: "系统", theme: "default", avatar: "cyber", host: "无名宿主" },
     total_exp: 0,
     magic_points: 0,
     attributes: { intellect: { exp: 0 }, constitution: { exp: 0 }, willpower: { exp: 0 }, creativity: { exp: 0 }, spirit: { exp: 0 } },
@@ -104,7 +104,7 @@
   // ----------------------------- persistence --------------------------------
   function mergeSeed(s) {
     s = s && typeof s === "object" ? s : {};
-    s.character = Object.assign({ name: "系统", theme: "default", avatar: "cyber" }, s.character || {});
+    s.character = Object.assign({ name: "系统", theme: "default", avatar: "cyber", host: "无名宿主" }, s.character || {});
     s.total_exp = s.total_exp || 0;
     s.magic_points = s.magic_points || 0;
     s.attributes = s.attributes || {};
@@ -220,7 +220,7 @@
 
     $("attr-legend").innerHTML = infos
       .map((v) =>
-        '<div class="attr-row"><span class="attr-name">' + v.label + "</span>" +
+        '<div class="attr-row"><span class="attr-name"><span class="attr-ico" style="background:' + v.color + ';box-shadow:0 0 7px ' + v.color + '"></span>' + v.label + "</span>" +
         '<span class="attr-track"><span class="attr-fill" style="width:' + v.progress + "%;background:" + v.color +
         ";box-shadow:0 0 8px " + v.color + '"></span></span>' +
         '<span class="attr-lv" style="color:' + v.color + ";border-color:" + v.color + '">Lv.' + v.level + "</span></div>"
@@ -300,10 +300,42 @@
       .join("");
   }
 
+  function hostTitle(level) {
+    if (level >= 13) return "超凡者";
+    if (level >= 9) return "卓越者";
+    if (level >= 6) return "笃行者";
+    if (level >= 4) return "精进者";
+    if (level >= 2) return "修行者";
+    return "初心者";
+  }
+  function renameHost() {
+    const cur = (state.character && state.character.host) || "";
+    const v = window.prompt("给宿主起个名字：", cur);
+    if (v == null) return;
+    const name = v.trim().slice(0, 16);
+    if (!name) return;
+    state.character.host = name;
+    saveState();
+    renderHero();
+    showToast("宿主之名已铭刻：" + name);
+  }
+  function renderHero() {
+    const lvl = levelInfo(state.total_exp);
+    const ring = $("hero-ring");
+    if (ring) ring.style.setProperty("--p", Math.min(100, lvl.pct));
+    const ava = $("hero-ava");
+    if (ava && window.avatarSvg) ava.innerHTML = window.avatarSvg((state.character && state.character.avatar) || "cyber");
+    const nm = $("hero-name");
+    if (nm) nm.textContent = (state.character && state.character.host) || "无名宿主";
+    const ti = $("hero-title");
+    if (ti) ti.textContent = hostTitle(lvl.level) + " · Lv." + lvl.level;
+  }
+
   function renderAll() {
     renderHeader();
     renderRadar();
     renderForest();
+    renderHero();
     renderQuests();
     renderTasks();
     renderDings();
@@ -753,6 +785,8 @@
     $("fb-modal").addEventListener("click", (e) => { if (e.target.id === "fb-modal") closeFeedback(); });
     $("gate-start").addEventListener("click", submitGate);
     $("gate-email").addEventListener("keydown", (e) => { if (e.key === "Enter") submitGate(); });
+    const heroNameEl = $("hero-name");
+    if (heroNameEl) heroNameEl.addEventListener("click", renameHost);
     renderAll();
     if (!isRegistered()) $("gate-overlay").hidden = false;
   });

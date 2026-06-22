@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>系统 · 主神养成系统</title>
+    <link rel="stylesheet" href="system.css" />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body class="hello-body">
+    <div class="hello-bg" aria-hidden="true"></div>
+    <div class="hello-stage">
+      <section class="card hello-window" aria-label="系统">
+        <div class="hello-titlebar">
+          <span class="hello-wing left"></span>
+          <h1 class="hello-title">系统</h1>
+          <span class="hello-wing right"></span>
+          <div class="hello-winctl"><span>—</span><span>□</span><a class="x" href="system.html" title="进入系统">✕</a></div>
+        </div>
+
+        <div class="hello-body-grid">
+          <div class="hello-main hud-panel">
+            <div class="hello-log" id="hello-log">
+              <p>【叮！检测到宿主已绑定系统】</p>
+              <p>【系统激活中… <span id="act-pct">0</span>%】</p>
+              <div class="act-bar"><i id="act-fill"></i></div>
+              <p>【系统激活成功！】</p>
+              <p class="hl-strong">【欢迎来到主神养成系统】</p>
+            </div>
+            <div class="hello-divider"><span>◇</span></div>
+            <div class="hello-stats">
+              <div class="hs-row"><span class="hs-k">宿主</span><span class="hs-v" id="hs-host">无名宿主</span></div>
+              <div class="hs-row"><span class="hs-k">称号</span><span class="hs-v" id="hs-title">初心者</span></div>
+              <div class="hs-row"><span class="hs-k">等级</span><span class="hs-v" id="hs-level">1（0/100）</span></div>
+              <div class="hs-attrs" id="hs-attrs"></div>
+              <div class="hs-row"><span class="hs-k">物品</span><span class="hs-v">新手礼包（未开启）</span></div>
+            </div>
+          </div>
+
+          <nav class="hello-menu hud-panel" aria-label="系统功能">
+            <div class="hm-title">系统功能</div>
+            <button class="hm-item" type="button" data-go="system.html"><span class="hm-ico">📋</span>【任务面板】</button>
+            <button class="hm-item" type="button" data-go="system.html"><span class="hm-ico">📊</span>【属性面板】</button>
+            <button class="hm-item locked" type="button" data-soon="技能面板"><span class="hm-ico">⚔️</span>【技能面板】<span class="hm-lock">🔒</span></button>
+            <button class="hm-item locked" type="button" data-soon="背包面板"><span class="hm-ico">🎒</span>【背包面板】<span class="hm-lock">🔒</span></button>
+            <button class="hm-item" type="button" data-go="system.html"><span class="hm-ico">🛒</span>【商城】</button>
+            <button class="hm-item locked" type="button" data-soon="成就面板"><span class="hm-ico">🏆</span>【成就面板】<span class="hm-lock">🔒</span></button>
+            <button class="hm-item" type="button" data-open="settings"><span class="hm-ico">⚙️</span>【系统设置】</button>
+          </nav>
+        </div>
+
+        <div class="hello-tip hud-panel">
+          <div class="hello-tip-head">◈ 系统提示</div>
+          <p id="hello-tip-text">这个世界充满未知与机遇，宿主，加油变强吧！</p>
+        </div>
+
+      </section>
+      <div class="hello-platform" aria-hidden="true"></div>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal" hidden>
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">系统 · 设置</p>
+            <h2>系统设置</h2>
+          </div>
+          <button class="modal-close" id="settings-close" type="button">✕</button>
+        </div>
+        <div class="set-group">
+          <label class="set-label" for="set-host">宿主名</label>
+          <input id="set-host" type="text" maxlength="16" placeholder="无名宿主" />
+        </div>
+        <div class="set-group">
+          <label class="set-label" for="set-proxy">GLM 代理地址（留空用默认）</label>
+          <input id="set-proxy" type="text" placeholder="https://…workers.dev/" />
+          <p class="set-hint">用于「系统生成任务」与完成旁白；修改后在仪表盘生效。</p>
+        </div>
+        <div class="set-actions">
+          <button class="qp-accept" id="set-save" type="button">保存</button>
+          <button class="set-danger" id="set-reset" type="button">重置全部数据</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+    <script src="index.js"></script>
+  </body>
+</html>

@@ -1,1 +1,2 @@
-/    /system.html    302
+# Root serves index.html (the 系统 hello / activation page).
+# The dashboard lives at /system.html (linked from the hello page).
